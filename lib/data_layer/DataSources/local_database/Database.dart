@@ -1,0 +1,1101 @@
+// 1. Core Drift and Platform Imports
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart'; // For NativeDatabase on mobile/desktop
+import 'package:ice_shield/orchestration_layer/IDGen.dart';
+import 'package:ice_shield/data_layer/Protocol/Canvas/ExternalWidgetProtocol.dart';
+import 'package:ice_shield/data_layer/Protocol/User/PersonProtocol.dart';
+import 'package:ice_shield/data_layer/Protocol/User/PersonalInformationProtocol.dart';
+import 'package:ice_shield/data_layer/Protocol/User/UserAccountProtocol.dart';
+import 'package:ice_shield/data_layer/Protocol/User/EmailAddressProtocol.dart';
+import 'package:ice_shield/data_layer/Protocol/User/ProfileProtocol.dart';
+import 'package:ice_shield/data_layer/Protocol/User/CVAddressProtocol.dart';
+import 'dart:io'; // For File
+import 'dart:math'; // For Random() used in DAOs
+import 'dart:convert';
+import 'package:path_provider/path_provider.dart'; // For finding the database path
+import 'package:path/path.dart' as p; // For path joining
+import 'package:ice_shield/data_layer/Protocol/Canvas/InternalWidgetDragProtocol.dart';
+
+// 2. Part Directives (Crucial for generated code)
+// NOTE: You must run `flutter pub run build_runner build` to generate this file.
+part 'Database.g.dart';
+// NOTE: I'm using 'app_database.g.dart' as the standard naming convention.
+
+// --- 3. Table Definitions ---
+
+// // Constants for ExternalWidgetsTable (Optional, but good for clarity)
+// const String columnId = 'widget_id';
+// const String columnName = 'name';
+// const String columnAlias = 'alias';
+// const String columnProtocol = 'protocol';
+// const String columnHost = 'host';
+// const String columnUrl = 'url';
+// const String columnDate = 'date_added';
+// const String columnImageUrl = 'image_url';
+
+@DataClassName("InternalWidgetData") // 3.1 ExternalWidgetsTable Definition
+// const InternalWidgetData({
+//   required super.url,
+//   required super.name,
+//   required super.imageUrl,
+//   required super.dateAdded,
+//   required super.widgetID,
+class InternalWidgetsTable extends Table {
+  IntColumn get widgetID =>
+      integer().autoIncrement().named("internal_widget_id")();
+  TextColumn get name =>
+      text().withLength(min: 1, max: 100).named("name").nullable()();
+  TextColumn get url => text()
+      .withLength(min: 1, max: 100)
+      .named("url")
+      .nullable()(); // Added .nullable() as it can be generated
+  TextColumn get dateAdded => text().named("date_added")();
+  TextColumn get imageUrl => text().named("image_url")();
+  TextColumn get alias => text().named("alias")();
+}
+
+@DriftAccessor(tables: [InternalWidgetsTable])
+class InternalWidgetsDAO extends DatabaseAccessor<AppDatabase>
+    with _$InternalWidgetsDAOMixin {
+  InternalWidgetsDAO(super.db);
+  Future<InternalWidgetData?> getInternalWidgetByName(String name) {
+    // return (select(internalWidgetsTable)..where((table)=>table.name.equals(_name)).getSingleOrNull());
+    return (select(internalWidgetsTable)
+          ..where((table) => table.name.equals(name)))
+        .getSingleOrNull(); // <--- CRITICAL CHANGE
+
+    // return (select(internalWidgetTable)
+    //     ..where((table) => table.name.equals(name)))
+    //     .getSingleOrNull();
+  }
+
+  Future<List<InternalWidgetData>> getInternaListWidgetByListName(
+    List<String> listName,
+  ) {
+    return (select(
+      internalWidgetsTable,
+    )..where((tbl) => tbl.name.isIn(listName))).get();
+  }
+
+  Stream<List<InternalWidgetData>> watchAllWidgets() {
+    return select(internalWidgetsTable).watch();
+  }
+
+  // void insertInternalWidget(){
+  Future<int> insertInternalWidget({
+    required String name,
+    // required String protocol,
+    // required widgetID,
+    required String alias,
+    required String url,
+    String? imageUrl,
+  }) {
+    // final alias = _generateRandomAlias(8);
+    final dateAdded = DateTime.now().toIso8601String();
+
+    final entry = InternalWidgetsTableCompanion.insert(
+      // alias: Value(alias),
+      name: Value(name),
+      // protocol: protocol,
+      // host: host,
+      // widgetID: widgetID,
+      alias: alias,
+      url: Value(url),
+      imageUrl: imageUrl ?? "",
+      dateAdded: dateAdded,
+    );
+
+    return into(internalWidgetsTable).insert(entry);
+  }
+}
+
+@DataClassName('ExternalWidgetData') // The generated data class name
+class ExternalWidgetsTable extends Table {
+  IntColumn get widgetID => integer().autoIncrement().named("widget_id")();
+  TextColumn get name => text().withLength(min: 1, max: 100).named("name")();
+  TextColumn get alias => text()
+      .withLength(min: 1, max: 100)
+      .named("alias")
+      .nullable()(); // Added .nullable() as it can be generated
+  TextColumn get protocol => text().named("protocol")();
+  TextColumn get host => text().named("host")();
+  TextColumn get url => text().named("url")();
+  TextColumn get imageUrl => text().nullable().named("image_url")();
+  TextColumn get dateAdded => text().named("date_added")();
+}
+
+// 3.2 ThemesTable Definition
+@DataClassName('LocalThemeData')
+class ThemesTable extends Table {
+  IntColumn get themeID => integer().autoIncrement()();
+  TextColumn get name => text().withLength(min: 1, max: 100)();
+  TextColumn get alias => text().withLength(min: 1, max: 50).unique()();
+  TextColumn get json => text().named('json_content')();
+  TextColumn get author => text().withLength(min: 1, max: 50)();
+  DateTimeColumn get addedDate => dateTime()();
+}
+
+// 3.3 ProjectNotesTable Definition
+@DataClassName('ProjectNoteData')
+class ProjectNotesTable extends Table {
+  IntColumn get noteID => integer().autoIncrement()();
+  TextColumn get title => text().withLength(min: 1, max: 200)();
+  TextColumn get content => text()(); // JSON string of the note content
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+// --- 3.4 Person Management Tables ---
+
+// Enums
+enum UserRole { user, admin, viewer }
+
+enum PostStatus { draft, published, archived, deleted }
+
+enum EmailStatus { pending, verified, bounced, disabled }
+
+enum CurrencyType { USD, EUR, VND, JPY, GBP, CNY }
+
+enum SkillLevel { beginner, intermediate, advanced, expert }
+
+@DataClassName('PersonData')
+class PersonsTable extends Table {
+  IntColumn get personID => integer().autoIncrement()();
+  TextColumn get firstName => text().withLength(min: 1, max: 100)();
+  TextColumn get lastName => text().nullable()();
+  // Full name can be computed in Dart, not stored
+  DateTimeColumn get dateOfBirth => dateTime().nullable()();
+  TextColumn get gender => text().nullable()(); // 'male', 'female', etc.
+  TextColumn get phoneNumber => text().withLength(max: 20).nullable()();
+  TextColumn get profileImageUrl => text().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('EmailAddressData')
+class EmailAddressesTable extends Table {
+  IntColumn get emailAddressID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get emailAddress => text().withLength(max: 320)();
+  TextColumn get emailType => text().withDefault(const Constant('personal'))();
+  BoolColumn get isPrimary => boolean().withDefault(const Constant(false))();
+  TextColumn get status =>
+      textEnum<EmailStatus>().withDefault(const Constant('pending'))();
+  DateTimeColumn get verifiedAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('UserAccountData')
+class UserAccountsTable extends Table {
+  IntColumn get accountID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get username => text().withLength(min: 3, max: 50).unique()();
+  TextColumn get passwordHash => text()();
+  IntColumn get primaryEmailID =>
+      integer().nullable().references(EmailAddressesTable, #emailAddressID)();
+  TextColumn get role =>
+      textEnum<UserRole>().withDefault(const Constant('user'))();
+  BoolColumn get isLocked => boolean().withDefault(const Constant(false))();
+  IntColumn get failedLoginAttempts =>
+      integer().withDefault(const Constant(0))();
+  DateTimeColumn get lastLoginAt => dateTime().nullable()();
+  DateTimeColumn get passwordChangedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('ProfileData')
+class ProfilesTable extends Table {
+  IntColumn get profileID => integer().autoIncrement()();
+  IntColumn get personID => integer()
+      .references(PersonsTable, #personID, onDelete: KeyAction.cascade)
+      .unique()();
+  TextColumn get bio => text().nullable()();
+  TextColumn get occupation => text().nullable()();
+  TextColumn get educationLevel => text().nullable()();
+  TextColumn get location => text().nullable()();
+  TextColumn get websiteUrl => text().nullable()();
+  TextColumn get linkedinUrl => text().nullable()();
+  TextColumn get githubUrl => text().nullable()();
+  TextColumn get timezone => text().withDefault(const Constant('UTC'))();
+  TextColumn get preferredLanguage =>
+      text().withDefault(const Constant('en'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('CVAddressData')
+class CVAddressesTable extends Table {
+  @override
+  String get tableName => 'cv_addresses';
+  IntColumn get cvAddressID => integer().autoIncrement()();
+  IntColumn get personID => integer()
+      .references(PersonsTable, #personID, onDelete: KeyAction.cascade)
+      .unique()();
+  TextColumn get githubUrl => text().nullable()();
+  TextColumn get websiteUrl => text().nullable()();
+  TextColumn get company => text().nullable()();
+  TextColumn get university => text().nullable()();
+  TextColumn get location => text().nullable()();
+  TextColumn get country => text().nullable()();
+  TextColumn get bio => text().nullable()();
+  TextColumn get occupation => text().nullable()();
+  TextColumn get educationLevel => text().nullable()();
+  TextColumn get linkedinUrl => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('SkillData')
+class SkillsTable extends Table {
+  IntColumn get skillID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get skillName => text()();
+  TextColumn get skillCategory => text().nullable()();
+  TextColumn get proficiencyLevel =>
+      textEnum<SkillLevel>().withDefault(const Constant('beginner'))();
+  IntColumn get yearsOfExperience => integer().withDefault(const Constant(0))();
+  TextColumn get description => text().nullable()();
+  BoolColumn get isFeatured => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('FinancialAccountData')
+class FinancialAccountsTable extends Table {
+  IntColumn get accountID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get accountName => text()();
+  TextColumn get accountType =>
+      text().withDefault(const Constant('checking'))();
+  RealColumn get balance => real().withDefault(const Constant(0.0))();
+  TextColumn get currency =>
+      textEnum<CurrencyType>().withDefault(const Constant('USD'))();
+  BoolColumn get isPrimary => boolean().withDefault(const Constant(false))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('AssetData')
+class AssetsTable extends Table {
+  IntColumn get assetID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get assetName => text()();
+  TextColumn get assetCategory => text()();
+  DateTimeColumn get purchaseDate => dateTime().nullable()();
+  RealColumn get purchasePrice => real().nullable()();
+  RealColumn get currentEstimatedValue => real().nullable()();
+  TextColumn get currency =>
+      textEnum<CurrencyType>().withDefault(const Constant('USD'))();
+  TextColumn get condition => text().withDefault(const Constant('good'))();
+  TextColumn get location => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  BoolColumn get isInsured => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('GoalData')
+class GoalsTable extends Table {
+  IntColumn get goalID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get title => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get category => text().withDefault(const Constant('personal'))();
+  IntColumn get priority => integer().withDefault(const Constant(3))();
+  TextColumn get status =>
+      text().withDefault(const Constant('active'))(); // planning, active, etc.
+  DateTimeColumn get targetDate => dateTime().nullable()();
+  DateTimeColumn get completionDate => dateTime().nullable()();
+  IntColumn get progressPercentage =>
+      integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('HabitData')
+class HabitsTable extends Table {
+  IntColumn get habitID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  IntColumn get goalID => integer().nullable().references(
+    GoalsTable,
+    #goalID,
+    onDelete: KeyAction.setNull,
+  )();
+  TextColumn get habitName => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get frequency => text()(); // daily, weekly, etc.
+  TextColumn get frequencyDetails => text().nullable()(); // JSON
+  IntColumn get targetCount => integer().withDefault(const Constant(1))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get startedDate =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('BlogPostData')
+class BlogPostsTable extends Table {
+  IntColumn get postID => integer().autoIncrement()();
+  IntColumn get authorID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.restrict,
+  )();
+  TextColumn get title => text()();
+  TextColumn get slug => text().unique()();
+  TextColumn get excerpt => text().nullable()();
+  TextColumn get content => text()();
+  TextColumn get featuredImageUrl => text().nullable()();
+  TextColumn get status =>
+      textEnum<PostStatus>().withDefault(const Constant('draft'))();
+  BoolColumn get isFeatured => boolean().withDefault(const Constant(false))();
+  IntColumn get viewCount => integer().withDefault(const Constant(0))();
+  IntColumn get likeCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get publishedAt => dateTime().nullable()();
+  DateTimeColumn get scheduledFor => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('PersonWidgetData')
+class PersonWidgetsTable extends Table {
+  IntColumn get personWidgetID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get widgetName => text()();
+  TextColumn get widgetType => text()();
+  TextColumn get configuration =>
+      text().withDefault(const Constant('{}'))(); // JSON
+  IntColumn get displayOrder => integer().withDefault(const Constant(0))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  TextColumn get role =>
+      textEnum<UserRole>().withDefault(const Constant('admin'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('SessionData')
+class SessionTable extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get jwt => text()();
+  TextColumn get username => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+// --- 4. DAO Definitions ---
+@DriftAccessor(tables: [PersonsTable])
+class PersonDAO extends DatabaseAccessor<AppDatabase> with _$PersonDAOMixin {
+  PersonDAO(super.db);
+  Stream<List<PersonData>> getAllPersons() => select(personsTable).watch();
+
+  Future<PersonData?> getPersonByID(int id) async {
+    final query = select(personsTable)..where((t) => t.personID.equals(id));
+
+    return query.getSingleOrNull();
+  }
+}
+
+// 4.1 ExternalWidgetsDAO
+@DriftAccessor(tables: [ExternalWidgetsTable])
+class ExternalWidgetsDAO extends DatabaseAccessor<AppDatabase>
+    with _$ExternalWidgetsDAOMixin {
+  ExternalWidgetsDAO(super.db);
+
+  String _generateRandomAlias(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random();
+
+    return String.fromCharCodes(
+      Iterable.generate(
+        length,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+  }
+
+  Future<int> insertNewWidget({
+    required ExternalWidgetProtocol externalWidgetProtocol,
+  }) {
+    final entry = ExternalWidgetsTableCompanion.insert(
+      name: externalWidgetProtocol.name.isEmpty
+          ? 'Unnamed Widget'
+          : externalWidgetProtocol.name,
+      alias: Value(_generateRandomAlias(8)),
+      widgetID: Value(IDGen.generate()),
+      // jsonContent: externalWidgetProtocol.jsonContent,
+      // author: externalWidgetProtocol.imageUrl,
+      host: externalWidgetProtocol.host,
+      protocol: externalWidgetProtocol.protocol,
+      dateAdded: DateTime.now().toString(),
+      url: externalWidgetProtocol.url,
+      imageUrl: Value(externalWidgetProtocol.imageUrl),
+    );
+
+    return into(externalWidgetsTable).insert(entry);
+
+    //      IntColumn get widgetID => integer().autoIncrement().named("widget_id")();
+    // TextColumn get name => text().withLength(min: 1, max: 100).named("name")();
+    // TextColumn get alias => text()
+    //     .withLength(min: 1, max: 100)
+    //     .named("alias")
+    //     .nullable()(); // Added .nullable() as it can be generated
+    // TextColumn get protocol => text().named("protocol")();
+    // TextColumn get host => text().named("host")();
+    // TextColumn get url => text().named("url")();
+    // TextColumn get imageUrl => text().nullable().named("image_url")();
+    // TextColumn get dateAdded => text().named("date_added")();
+    // );
+
+    // return into(externalWidgetsTable).insert(entry);
+  }
+
+  Future<int> deleteWidget(int widgetID) async {
+    return (delete(
+      externalWidgetsTable,
+    )..where((tbl) => tbl.widgetID.equals(widgetID))).go();
+  }
+
+  Stream<List<ExternalWidgetData>> watchAllWidgets() {
+    return select(externalWidgetsTable).watch();
+  }
+}
+
+// 4.2 ThemesTableDAO
+@DriftAccessor(tables: [ThemesTable])
+class ThemesTableDAO extends DatabaseAccessor<AppDatabase>
+    with _$ThemesTableDAOMixin {
+  ThemesTableDAO(super.db);
+
+  String _generateRandomAlias(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random();
+
+    return String.fromCharCodes(
+      Iterable.generate(
+        length,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+  }
+
+  Future<int> insertNewTheme({
+    required String name,
+    required String jsonContent,
+    required String author,
+  }) {
+    final alias = _generateRandomAlias(8);
+
+    final entry = ThemesTableCompanion.insert(
+      name: name,
+      alias: alias,
+      json: jsonContent,
+      author: author,
+      addedDate: DateTime.now(),
+    );
+
+    return into(themesTable).insert(entry);
+  }
+
+  Stream<List<LocalThemeData>> watchAllThemes() {
+    return select(themesTable).watch();
+  }
+}
+
+// 4.3 ProjectNoteDAO
+@DriftAccessor(tables: [ProjectNotesTable])
+class ProjectNoteDAO extends DatabaseAccessor<AppDatabase>
+    with _$ProjectNoteDAOMixin {
+  ProjectNoteDAO(super.db);
+
+  Future<int> insertNote({required String title, required String content}) {
+    return into(projectNotesTable).insert(
+      ProjectNotesTableCompanion.insert(
+        title: title,
+        content: content,
+        createdAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<bool> updateNote(ProjectNoteData note) {
+    return update(
+      projectNotesTable,
+    ).replace(note.copyWith(updatedAt: DateTime.now()));
+  }
+
+  Future<int> deleteNote(int id) {
+    return (delete(
+      projectNotesTable,
+    )..where((tbl) => tbl.noteID.equals(id))).go();
+  }
+
+  Stream<List<ProjectNoteData>> watchAllNotes() {
+    return select(projectNotesTable).watch();
+  }
+
+  Stream<List<ProjectNoteData>> watchRecentNotes(int limit) {
+    return (select(projectNotesTable)
+          ..orderBy([
+            (tbl) => OrderingTerm(
+              expression: tbl.updatedAt,
+              mode: OrderingMode.desc,
+            ),
+          ])
+          ..limit(limit))
+        .watch();
+  }
+
+  Future<ProjectNoteData?> getNoteById(int id) {
+    return (select(
+      projectNotesTable,
+    )..where((tbl) => tbl.noteID.equals(id))).getSingleOrNull();
+  }
+}
+
+// 4.4 PersonManagementDAO
+@DriftAccessor(
+  tables: [
+    PersonsTable,
+    EmailAddressesTable,
+    UserAccountsTable,
+    ProfilesTable,
+    CVAddressesTable,
+  ],
+)
+class PersonManagementDAO extends DatabaseAccessor<AppDatabase>
+    with _$PersonManagementDAOMixin {
+  PersonManagementDAO(super.db);
+
+  // Persons
+  Future<int> createPerson(PersonProtocol person) {
+    final companion = PersonsTableCompanion.insert(
+      personID: Value(person.personID),
+      firstName: person.firstName,
+      lastName: Value(person.lastName),
+      dateOfBirth: Value(person.dateOfBirth),
+      gender: Value(person.gender),
+      phoneNumber: Value(person.phoneNumber),
+      profileImageUrl: Value(person.profileImageUrl),
+      isActive: Value(person.isActive),
+      createdAt: Value(DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+    );
+    return into(personsTable).insert(companion);
+  }
+
+  Future<int> createMailAddress(EmailAddressProtocol email) {
+    final companion = EmailAddressesTableCompanion.insert(
+      emailAddressID: Value(email.emailAddressID),
+      emailAddress: email.emailAddress,
+      personID: email.personID,
+      emailType: Value(email.emailType),
+      isPrimary: Value(email.isPrimary),
+      status: Value(email.status),
+      verifiedAt: Value(email.verifiedAt),
+      createdAt: Value(DateTime.now()),
+      // updatedAt: Value(DateTime.now()),
+    );
+    return into(emailAddressesTable).insert(companion);
+  }
+
+  Future<PersonData?> getPersonById(int personID) => (select(
+    personsTable,
+  )..where((t) => t.personID.equals(personID))).getSingleOrNull();
+
+  Future<void> updatePerson(PersonData person) =>
+      update(personsTable).replace(person);
+
+  // Emails
+  Future<int> addEmail(EmailAddressProtocol email, {int? overridePersonID}) {
+    // Convert string status to EmailStatus enum
+    EmailStatus emailStatus;
+    switch (email.status.toString().toLowerCase()) {
+      case 'verified':
+        emailStatus = EmailStatus.verified;
+        break;
+      case 'bounced':
+        emailStatus = EmailStatus.bounced;
+        break;
+      case 'disabled':
+        emailStatus = EmailStatus.disabled;
+        break;
+      default:
+        emailStatus = EmailStatus.pending;
+    }
+
+    final companion = EmailAddressesTableCompanion.insert(
+      emailAddressID: Value(email.emailAddressID),
+      personID: overridePersonID ?? email.personID,
+      emailAddress: email.emailAddress,
+      emailType: Value(email.emailType),
+      isPrimary: Value(email.isPrimary),
+      status: Value(emailStatus),
+      verifiedAt: Value(email.verifiedAt),
+      createdAt: Value(DateTime.now()),
+    );
+    return into(emailAddressesTable).insert(companion);
+  }
+
+  Future<List<EmailAddressData>> getEmailsForPerson(int personId) => (select(
+    emailAddressesTable,
+  )..where((t) => t.personID.equals(personId))).get();
+
+  Future<void> updateEmail(EmailAddressData email) =>
+      update(emailAddressesTable).replace(email);
+
+  // Accounts
+  Future<int> createAccount(
+    UserAccountProtocol account, {
+    int? overridePersonID,
+    String? passwordHash,
+  }) {
+    // Convert string role to UserRole enum
+    UserRole userRole;
+    switch (account.role.toLowerCase()) {
+      case 'admin':
+        userRole = UserRole.admin;
+        break;
+      case 'viewer':
+        userRole = UserRole.viewer;
+        break;
+      default:
+        userRole = UserRole.user;
+    }
+
+    // Defensive check for username length (Drift constraint: min 3)
+    String safeUsername = account.username;
+    if (safeUsername.length < 3) {
+      safeUsername = "user_${DateTime.now().millisecondsSinceEpoch % 1000}";
+    }
+
+    final companion = UserAccountsTableCompanion.insert(
+      accountID: Value(account.accountID),
+      personID: overridePersonID ?? account.personID,
+      username: safeUsername,
+      passwordHash: passwordHash ?? '', // Default empty if not provided
+      primaryEmailID: const Value.absent(),
+      role: Value(userRole),
+      isLocked: Value(account.isLocked),
+      lastLoginAt: Value(account.lastLoginAt),
+      createdAt: Value(DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+    );
+    return into(userAccountsTable).insert(companion);
+  }
+
+  Future<UserAccountData?> getAccountByUsername(String username) => (select(
+    userAccountsTable,
+  )..where((t) => t.username.equals(username))).getSingleOrNull();
+
+  Future<void> updateAccount(UserAccountData account) =>
+      update(userAccountsTable).replace(account);
+
+  // Profiles
+  Future<int> createProfile(ProfileProtocol profile, {int? overridePersonID}) {
+    final companion = ProfilesTableCompanion.insert(
+      profileID: Value(profile.profileID),
+      personID: overridePersonID ?? profile.personID,
+      bio: Value(profile.bio),
+      occupation: Value(profile.occupation),
+      educationLevel: Value(profile.educationLevel),
+      location: Value(profile.location),
+      websiteUrl: Value(profile.websiteUrl),
+      linkedinUrl: Value(profile.linkedinUrl),
+      githubUrl: Value(profile.githubUrl),
+      createdAt: Value(DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+    );
+    return into(profilesTable).insert(companion);
+  }
+
+  Future<ProfileData?> getProfileForPerson(int personId) => (select(
+    profilesTable,
+  )..where((t) => t.personID.equals(personId))).getSingleOrNull();
+
+  Future<void> updateProfile(ProfileData profile) =>
+      update(profilesTable).replace(profile);
+
+  // CV Addresses
+  Future<int> createCVAddress(
+    CVAddressProtocol cvAddress, {
+    int? overridePersonID,
+  }) {
+    final companion = CVAddressesTableCompanion.insert(
+      cvAddressID: Value(cvAddress.cvAddressID),
+      personID: overridePersonID ?? cvAddress.personID,
+      githubUrl: Value(cvAddress.githubUrl),
+      websiteUrl: Value(cvAddress.websiteUrl),
+      company: Value(cvAddress.company),
+      university: Value(cvAddress.university),
+      location: Value(cvAddress.location),
+      bio: Value(cvAddress.bio),
+      occupation: Value(cvAddress.occupation),
+      educationLevel: Value(cvAddress.educationLevel),
+      linkedinUrl: Value(cvAddress.linkedinUrl),
+      createdAt: Value(DateTime.now()),
+      updatedAt: Value(DateTime.now()),
+    );
+    return into(cVAddressesTable).insert(companion);
+  }
+
+  Future<PersonalInformationProtocol> getAllInformation(int id) async {
+    final emailData = await (select(
+      emailAddressesTable,
+    )..where((t) => t.personID.equals(id))).getSingleOrNull();
+    final accountData = await (select(
+      userAccountsTable,
+    )..where((t) => t.personID.equals(id))).getSingleOrNull();
+
+    final personData = await (select(
+      personsTable,
+    )..where((t) => t.personID.equals(id))).getSingleOrNull();
+    // final accountData =  getAccountByID(emailData!.personID);
+    // final profileData =  getProfileForPerson(accountData!.personID);
+    final cvAddressData = await (select(
+      cVAddressesTable,
+    )..where((t) => t.personID.equals(id))).getSingleOrNull();
+
+    final personalInformation = PersonalInformationProtocol(
+      name: personData?.firstName ?? 'User',
+      email: emailData?.emailAddress ?? '',
+
+      // cvAddress: cvAddressData,
+      username: accountData?.username ?? 'user',
+      phoneNumber: personData?.phoneNumber,
+      address: cvAddressData?.location,
+      gender: personData?.gender,
+      city: cvAddressData?.location,
+      country: cvAddressData?.country,
+      // postalCode: cvAddressData?.postalCode,
+      birthday: personData?.dateOfBirth?.toString(),
+      bio: cvAddressData?.bio,
+      occupation: cvAddressData?.occupation,
+      // profileImageUrl: accountData!.,
+      isActive: accountData?.isLocked ?? false,
+      company: cvAddressData?.company,
+      website: cvAddressData?.websiteUrl,
+      // postalCode: cvAddressData.postalCode, // CVAddress doesn't have it yet?
+      // Let's check table definition again...
+      // Line 248 has country. Let's see if 249 has bio.
+      // I'll just skip postalCode for now if it's not in the table.
+    );
+    return personalInformation;
+  }
+
+  Future<CVAddressData?> getCVAddressForPerson(int personId) => (select(
+    cVAddressesTable,
+  )..where((t) => t.personID.equals(personId))).getSingleOrNull();
+
+  Future<void> updateCVAddress(CVAddressData cvAddress) =>
+      update(cVAddressesTable).replace(cvAddress);
+
+  // Helper lookups
+  Future<PersonData?> getPersonByEmail(String email) async {
+    final emailData = await (select(
+      emailAddressesTable,
+    )..where((t) => t.emailAddress.equals(email))).getSingleOrNull();
+
+    if (emailData != null) {
+      return getPersonById(emailData.personID);
+    }
+    return null;
+  }
+
+  Future<PersonData?> getPersonByUsername(String username) async {
+    final accountData = await getAccountByUsername(username);
+    if (accountData != null) {
+      return getPersonById(accountData.personID);
+    }
+    return null;
+  }
+
+  // Full Profile Creation (Transaction)
+  Future<int> createFullProfile({
+    required PersonProtocol person,
+    required EmailAddressProtocol email,
+    required UserAccountProtocol account,
+    required ProfileProtocol profile,
+    required CVAddressProtocol cvAddress,
+    String? passwordHash,
+  }) {
+    return transaction(() async {
+      final personID = await createPerson(person);
+
+      await addEmail(email, overridePersonID: personID);
+      await createAccount(
+        account,
+        overridePersonID: personID,
+        passwordHash: passwordHash,
+      );
+      await createProfile(profile, overridePersonID: personID);
+      await createCVAddress(cvAddress, overridePersonID: personID);
+
+      return personID;
+    });
+  }
+}
+
+// 4.5 FinanceDAO
+@DriftAccessor(tables: [FinancialAccountsTable, AssetsTable])
+class FinanceDAO extends DatabaseAccessor<AppDatabase> with _$FinanceDAOMixin {
+  FinanceDAO(super.db);
+
+  // Accounts
+  Future<int> createAccount(FinancialAccountsTableCompanion account) =>
+      into(financialAccountsTable).insert(account);
+  Stream<List<FinancialAccountData>> watchAccounts(int personId) => (select(
+    financialAccountsTable,
+  )..where((t) => t.personID.equals(personId))).watch();
+
+  // Assets
+  Future<int> createAsset(AssetsTableCompanion asset) =>
+      into(assetsTable).insert(asset);
+  Stream<List<AssetData>> watchAssets(int personId) =>
+      (select(assetsTable)..where((t) => t.personID.equals(personId))).watch();
+}
+
+// 4.6 GrowthDAO
+@DriftAccessor(tables: [GoalsTable, HabitsTable, SkillsTable])
+class GrowthDAO extends DatabaseAccessor<AppDatabase> with _$GrowthDAOMixin {
+  GrowthDAO(super.db);
+
+  // Goals
+  Future<int> createGoal(GoalsTableCompanion goal) =>
+      into(goalsTable).insert(goal);
+  Stream<List<GoalData>> watchGoals(int personId) =>
+      (select(goalsTable)..where((t) => t.personID.equals(personId))).watch();
+
+  // Habits
+  Future<int> createHabit(HabitsTableCompanion habit) =>
+      into(habitsTable).insert(habit);
+  Stream<List<HabitData>> watchHabits(int personId) =>
+      (select(habitsTable)..where((t) => t.personID.equals(personId))).watch();
+
+  // Skills
+  Future<int> createSkill(SkillsTableCompanion skill) =>
+      into(skillsTable).insert(skill);
+  Stream<List<SkillData>> watchSkills(int personId) =>
+      (select(skillsTable)..where((t) => t.personID.equals(personId))).watch();
+}
+
+// 4.7 ContentDAO
+@DriftAccessor(tables: [BlogPostsTable])
+class ContentDAO extends DatabaseAccessor<AppDatabase> with _$ContentDAOMixin {
+  ContentDAO(super.db);
+
+  Future<int> createPost(BlogPostsTableCompanion post) =>
+      into(blogPostsTable).insert(post);
+  Stream<List<BlogPostData>> watchPosts(int authorID) => (select(
+    blogPostsTable,
+  )..where((t) => t.authorID.equals(authorID))).watch();
+  Future<BlogPostData?> getPostBySlug(String slug) => (select(
+    blogPostsTable,
+  )..where((t) => t.slug.equals(slug))).getSingleOrNull();
+}
+
+// 4.8 WidgetDAO
+@DriftAccessor(tables: [PersonWidgetsTable])
+class WidgetDAO extends DatabaseAccessor<AppDatabase> with _$WidgetDAOMixin {
+  WidgetDAO(super.db);
+
+  Future<int> createWidget(PersonWidgetsTableCompanion widget) =>
+      into(personWidgetsTable).insert(widget);
+
+  Stream<List<PersonWidgetData>> watchWidgets(int personId) => (select(
+    personWidgetsTable,
+  )..where((t) => t.personID.equals(personId))).watch();
+
+  Future<List<PersonWidgetData>> getAllWidgets(int personId) => (select(
+    personWidgetsTable,
+  )..where((t) => t.personID.equals(personId))).get();
+
+  Future<void> updateWidgetConfig(int id, String newConfig) =>
+      (update(personWidgetsTable)..where((t) => t.personWidgetID.equals(id)))
+          .write(PersonWidgetsTableCompanion(configuration: Value(newConfig)));
+
+  Future<void> saveAllWidgets(
+    int personId,
+    List<InternalWidgetDragProtocol> widgets,
+  ) {
+    return transaction(() async {
+      // 1. Delete all existing widgets for this person
+      await (delete(
+        personWidgetsTable,
+      )..where((t) => t.personID.equals(personId))).go();
+
+      // 2. Insert non-empty ones with their index
+      for (int i = 0; i < widgets.length; i++) {
+        final widget = widgets[i];
+        if (widget.isEmpty) continue;
+
+        await into(personWidgetsTable).insert(
+          PersonWidgetsTableCompanion.insert(
+            personID: personId,
+            widgetName: widget.name,
+            widgetType: widget.alias,
+            displayOrder: Value(i),
+            configuration: Value(jsonEncode(widget.toJson())),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+    });
+  }
+}
+
+@DriftAccessor(tables: [SessionTable])
+class SessionDAO extends DatabaseAccessor<AppDatabase> with _$SessionDAOMixin {
+  SessionDAO(super.db);
+
+  Future<int> saveSession(String jwt, String? username) {
+    return transaction(() async {
+      await delete(sessionTable).go(); // Only one session at a time
+      return into(sessionTable).insert(
+        SessionTableCompanion.insert(jwt: jwt, username: Value(username)),
+      );
+    });
+  }
+
+  Future<SessionData?> getSession() => select(sessionTable).getSingleOrNull();
+
+  Future<void> clearSession() => delete(sessionTable).go();
+}
+
+// --- 5. Database Connection Helper ---
+
+LazyDatabase _openConnection() {
+  return LazyDatabase(() async {
+    final dbFolder = await getApplicationDocumentsDirectory();
+    print("Database directory: ${dbFolder.path}");
+    final file = File(p.join(dbFolder.path, 'db22223834.sqlite'));
+
+    try {
+      if (await file.exists()) {
+        print("Database file exists at: ${file.path}");
+      } else {
+        print(
+          "Database file does not exist. It will be created at: ${file.path}",
+        );
+      }
+
+      print("Finalizing database connection...");
+      // Using NativeDatabase directly instead of inBackground for testing iOS stability
+      return NativeDatabase(file, logStatements: true);
+    } catch (e) {
+      print("❌ Error opening database: $e");
+      rethrow;
+    }
+  });
+}
+
+// --- 6. Main Database Class ---
+
+@DriftDatabase(
+  tables: [
+    ExternalWidgetsTable,
+    ThemesTable,
+    InternalWidgetsTable,
+    ProjectNotesTable,
+    PersonsTable,
+    EmailAddressesTable,
+    UserAccountsTable,
+    ProfilesTable,
+    SkillsTable,
+    FinancialAccountsTable,
+    AssetsTable,
+    GoalsTable,
+    HabitsTable,
+    BlogPostsTable,
+    PersonWidgetsTable,
+    CVAddressesTable,
+    SessionTable,
+  ],
+  daos: [
+    ThemesTableDAO,
+    ExternalWidgetsDAO,
+    InternalWidgetsDAO,
+    ProjectNoteDAO,
+    // New DAOs
+    PersonManagementDAO,
+    FinanceDAO,
+    GrowthDAO,
+    ContentDAO,
+    WidgetDAO,
+    PersonDAO,
+    SessionDAO,
+  ],
+)
+class AppDatabase extends _$AppDatabase {
+  AppDatabase() : super(_openConnection());
+
+  @override
+  int get schemaVersion => 4; // Increment schema version
+
+  // Migration strategy would be needed here for a real app update
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          // Create new tables
+          await m.createTable(personsTable);
+          await m.createTable(emailAddressesTable);
+          await m.createTable(userAccountsTable);
+          await m.createTable(profilesTable);
+          await m.createTable(skillsTable);
+          await m.createTable(financialAccountsTable);
+          await m.createTable(assetsTable);
+          await m.createTable(goalsTable);
+          await m.createTable(habitsTable);
+          await m.createTable(blogPostsTable);
+          await m.createTable(personWidgetsTable);
+        }
+        if (from < 3) {
+          await m.createTable(cVAddressesTable);
+        }
+        if (from < 4) {
+          await m.createTable(sessionTable);
+        }
+      },
+    );
+  }
+}

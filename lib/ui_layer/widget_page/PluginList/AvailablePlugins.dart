@@ -1,0 +1,61 @@
+import '../../../data_layer/Protocol/Plugin/BasePluginProtocol.dart';
+import 'package:ice_shield/data_layer/Protocol/Home/PluginProtocol.dart';
+import 'CarTracker.dart';
+import 'IOTTracker/IOTTracker.dart';
+import 'WebView/LiveMapPlugin.dart';
+import 'GoogleCalendar.dart';
+import 'Gmail.dart';
+import 'Trello.dart';
+import 'Notion/Notion.dart';
+import 'Spotify.dart';
+import 'GitHub.dart';
+import 'Weather.dart';
+import 'CryptoTracker.dart';
+
+/// Registry of all available plugins
+class AvailablePlugins {
+  static const List<BasePluginProtocol> all = [
+    CarTrackerPlugin(),
+    IOTTrackerPlugin(),
+    // OSMMapPlugin(),
+    LiveMapPlugin(),
+    GoogleCalendarPlugin(),
+    GmailPlugin(),
+    TrelloPlugin(),
+    NotionPlugin(),
+    SpotifyPlugin(),
+    GitHubPlugin(),
+    WeatherPlugin(),
+    CryptoTrackerPlugin(),
+    // MapPlugin(),
+  ];
+
+  /// Get plugins by category
+  static List<BasePluginProtocol> getByCategory(PluginCategory category) {
+    return all.where((p) => p.category == category).toList();
+  }
+
+  /// Search plugins by name, description, or tags
+  static List<BasePluginProtocol> search(String query) {
+    final lowerQuery = query.toLowerCase();
+    return all.where((p) {
+      return p.name.toLowerCase().contains(lowerQuery) ||
+          p.description.toLowerCase().contains(lowerQuery) ||
+          p.tags.any((tag) => tag.toLowerCase().contains(lowerQuery));
+    }).toList();
+  }
+
+  /// Get plugin by name
+  static BasePluginProtocol? getByName(String name) {
+    try {
+      return all.firstWhere((p) => p.name == name);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get all categories that have at least one plugin
+  static List<PluginCategory> getAvailableCategories() {
+    return all.map((p) => p.category).toSet().toList();
+  }
+}

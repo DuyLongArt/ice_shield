@@ -1,0 +1,11 @@
+{
+    "theme_name": "Seed Indigo",
+    "brightness": "light",
+    "useMaterial3": true,
+    "seed_color": "0xFF3F51B5",
+    "components": {
+        "appBar": {
+            "elevation": 0.0
+        }
+    }
+}

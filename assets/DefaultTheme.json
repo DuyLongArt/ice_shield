@@ -1,0 +1,72 @@
+{
+  "theme_name": "NatureGreen_DetailedMaterial",
+  "brightness": "light", 
+  "useMaterial3": true,
+  
+  "color_palette": {
+    
+    "accentLime": "0xFFC0CA33",           
+    "surfaceWhite": "0xFFF5F5F5",
+    "darkText": "0xFF212121"
+  },
+
+  "color_scheme": {
+    "primary": "0xFF322E3C",           
+    "onPrimary": "0xFFFFFFFF",         
+    
+    "secondary": "0xFFC0CA33",         
+    "onSecondary": "0xFF000000",       
+    
+    "surface": "0xFFF5F5F5",           
+    "onSurface": "0xFF212121",         
+    
+    "background": "0xFFE8F5E9",        
+    "onBackground": "0xFF212121",      
+    
+    "error": "0xFFD32F2F",             
+    "onError": "0xFFFFFFFF"            
+  },
+  
+  "components": {
+    "appBar": {
+      "backgroundColor": "0xFF4CAF50",  
+      "foregroundColor": "0xFFFFFFFF",  
+      "elevation": 2.0
+    },
+    
+    "elevatedButton": {
+      "backgroundColor": "0xFF388E3C", 
+      "foregroundColor": "0xFFFFFFFF", 
+      "borderRadius": 8.0,
+      "elevation": 4.0
+    },
+
+    "floatingActionButton": {
+      "backgroundColor": "0xFFC0CA33", 
+      "foregroundColor": "0xFF000000", 
+      "shape": "circular"
+    }
+  },
+
+  "text_theme": {
+    "fontFamily": "Roboto",
+    
+    "headlineLarge": {
+      "size": 32.0,
+      "weight": "bold",
+      "color": "0xFF212121" 
+    },
+    
+    "bodyMedium": {
+      "size": 14.0,
+      "weight": "normal",
+      "color": "0xFF212121"
+    },
+    
+    "labelLarge": { 
+      "size": 16.0,
+      "weight": "medium",
+      "color": "0xFFFFFFFF" 
+    }
+  }
+}
