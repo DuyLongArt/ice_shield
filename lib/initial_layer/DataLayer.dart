@@ -192,6 +192,7 @@ class _DataLayerState extends State<DataLayer> {
         Provider<GrowthDAO>(create: (_) => widget.database.growthDAO),
         Provider<ContentDAO>(create: (_) => widget.database.contentDAO),
         Provider<WidgetDAO>(create: (_) => widget.database.widgetDAO),
+        Provider<HealthMealDAO>(create: (_) => widget.database.healthMealDAO),
 
         // --- NEW: Reactive Blocks ---
         // PersonBlock (Load user ID 1 by default)

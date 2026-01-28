@@ -289,7 +289,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
         actions: [
           if (_isCreate)
             IconButton(
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.ac_unit_outlined),
               onPressed: _isSaving ? null : () => _saveChanges(true),
               tooltip: 'Create',
             )

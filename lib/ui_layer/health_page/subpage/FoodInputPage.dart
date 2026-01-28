@@ -1,28 +1,89 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:ice_shield/initial_layer/Services/Health/AIFoodCaloriesServices.dart';
+import 'package:provider/provider.dart';
 
 class FoodInputPage extends StatefulWidget {
   const FoodInputPage({super.key});
 
   @override
   State<FoodInputPage> createState() => _FoodInputPageState();
+   static Widget icon(BuildContext context, {double? size}) {
+    return MainButton(
+      type: "health",
+      destination: "/health",
+      size: size,
+      mainFunction: () {
+        print("Main button clicked");
+        context.go('/health/food/dashboard');
+      },
+      icon: Icons.menu,
+      subButtons: [
+        SubButton(
+          icon: Icons.restaurant,
+          // size: 100,
+          backgroundColor: Colors.orange,
+          onPressed: () {
+            print("Main button clicked");
+            context.go('/health/food');
+          },
+        ),
+        SubButton(
+          icon: Icons.fitness_center,
+          backgroundColor: Colors.red,
+          onPressed: () => context.go('/health/exercise'),
+        ),
+        SubButton(
+          icon: Icons.bedtime,
+          backgroundColor: Colors.indigo,
+          onPressed: () => context.go('/health/sleep'),
+        ),
+        SubButton(
+          icon: Icons.water_drop,
+          backgroundColor: Colors.cyan,
+          onPressed: () {
+            context.go('/health/water');
+            print("Water button clicked");
+          },
+        ),
+      ],
+      // isShow: false,
+      // onPressed: () {
+      //   setState(() {
+      //     isShow=true;
+      //   })
+      // },
+    );
+  }
 }
 
 class _FoodInputPageState extends State<FoodInputPage> {
   final _aiService = Aifoodcaloriesservices();
+
   bool _isAnalyzing = false;
   final List<Map<String, dynamic>> _meals = [
-    {'name': 'Breakfast', 'calories': 450, 'time': '08:30 AM'},
-    {'name': 'Lunch', 'calories': 650, 'time': '01:15 PM'},
+    // {'name': 'Breakfast', 'calories': 450, 'time': '08:30 AM'},
+    // {'name': 'Lunch', 'calories': 650, 'time': '01:15 PM'},
   ];
 
   final _foodController = TextEditingController();
   final _caloriesController = TextEditingController();
   File? _pickedImage;
   final ImagePicker _picker = ImagePicker();
+
+  late HealthMealDAO _healthMealDAO;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _healthMealDAO = context.read<HealthMealDAO>();
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -57,7 +118,12 @@ class _FoodInputPageState extends State<FoodInputPage> {
 
       if (mounted) {
         setState(() {
-          _caloriesController.text = calories;
+          _caloriesController.text =
+              calories.carbs.toString() +
+              "|" +
+              calories.protein.toString() +
+              "|" +
+              calories.fat.toString();
           _isAnalyzing = false;
         });
       }
@@ -67,14 +133,42 @@ class _FoodInputPageState extends State<FoodInputPage> {
     }
   }
 
-  void _addMeal() {
+  Future<void> _addMeal() async {
     if (_foodController.text.isNotEmpty &&
         _caloriesController.text.isNotEmpty) {
+      final energy = _caloriesController.text.split("|");
+      final carbs = double.tryParse(energy[0]) ?? 0.0;
+      final protein = double.tryParse(energy[1]) ?? 0.0;
+      final fat = double.tryParse(energy[2]) ?? 0.0;
+      final totalCalories = (carbs + protein + fat).toInt();
+
+      final now = DateTime.now();
+
+      // 1. Insert Meal details
+      final mealId = await _healthMealDAO.insertMeal(
+        MealsTableCompanion.insert(
+          mealName: _foodController.text,
+          mealImageUrl: Value(_pickedImage?.path),
+          carbs: Value(carbs),
+          protein: Value(protein),
+          fat: Value(fat),
+        ),
+      );
+
+      // 2. Insert Day log
+      await _healthMealDAO.insertDay(
+        DaysTableCompanion.insert(
+          mealID: mealId,
+          entryDateTime: now,
+          totalCalories: Value(totalCalories),
+        ),
+      );
+
       setState(() {
         _meals.add({
           'name': _foodController.text,
-          'calories': int.tryParse(_caloriesController.text) ?? 0,
-          'time': 'Just now',
+          'calories': totalCalories,
+          'time': now.toString(),
           'image': _pickedImage,
         });
         _foodController.clear();
@@ -116,7 +210,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                   children: [
                     AutoSizeText(
                       'Today\'s Intake',
-                      style: textTheme.titleMedium,
+                      style: textTheme.titleSmall,
                       maxLines: 1,
                     ),
                     const SizedBox(height: 8),
@@ -269,7 +363,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                 TextField(
                   controller: _caloriesController,
                   decoration: InputDecoration(
-                    labelText: 'Calories',
+                    labelText: 'Energy',
                     border: const OutlineInputBorder(),
                     suffixIcon: _isAnalyzing
                         ? const Padding(

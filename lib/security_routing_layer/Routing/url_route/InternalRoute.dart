@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SettingWidget.dart';
 import 'package:ice_shield/ui_layer/health_page/CaloriesPage.dart';
 import 'package:ice_shield/ui_layer/health_page/ExercisePage.dart';
+import 'package:ice_shield/ui_layer/health_page/subpage/FoodDashboardPage.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/StepsPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/ProjectNotesPage.dart';
 import 'package:ice_shield/ui_layer/widget_page/WidgetPage.dart';
@@ -107,6 +108,13 @@ final GoRouter router = GoRouter(
               path: 'food',
               parentNavigatorKey: _shellNavigatorKey,
               builder: (context, state) => const FoodInputPage(),
+              routes: [
+                GoRoute(
+                  path: 'dashboard',
+                  parentNavigatorKey: _shellNavigatorKey,
+                  builder: (context, state) => const FoodDashboardPage(),
+                ),
+              ]
             ),
             GoRoute(
               path: 'exercise',

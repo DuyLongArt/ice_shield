@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 // NOTE: Please ensure these imports are correct for your project structure
+import 'package:drift/drift.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 // import 'package:ice_shield/orchestration_layer/ActionFiles/Home/InternalWidgetProtocol.dart';
@@ -50,7 +51,7 @@ class _adapterState extends State<Adapter> {
       );
 
       await dao.insertInternalWidget(
-        name: "Health Department",
+        name: "Health",
         imageUrl: "",
         url: "url",
         alias: "HealthPage",
@@ -60,6 +61,33 @@ class _adapterState extends State<Adapter> {
       print("Default internal widgets inserted successfully.");
     } else {
       print("Default internal widgets already exist. Skipping insertion.");
+    }
+
+    // Seed default health metrics
+    final healthDao = appDatabase.healthMetricsDAO;
+    final today = DateTime.now();
+    final todayMetrics = await healthDao.getMetricsForDate(
+      1,
+      today,
+    ); // Using personID 1 for now
+
+    if (todayMetrics == null) {
+      await healthDao.insertOrUpdateMetrics(
+        HealthMetricsTableCompanion.insert(
+          personID: 1,
+          date: today,
+          steps: const Value(0),
+          heartRate: const Value(0),
+          sleepHours: const Value(0),
+          waterGlasses: const Value(0),
+          exerciseMinutes: const Value(0),
+          weightKg: const Value(0),
+          caloriesConsumed: const Value(0),
+          caloriesBurned: const Value(0),
+          updatedAt: Value(today),
+        ),
+      );
+      print("Default health metrics seeded.");
     }
 
     // Start the reactive stream after data insertion is complete.

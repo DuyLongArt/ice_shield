@@ -27,13 +27,20 @@ class HomePage extends StatefulWidget {
       destination: "/",
       size: size,
       mainFunction: () => {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: AutoSizeText('Home button pressed', maxLines: 1),
-          ),
-        ),
+       context.go("/")
       },
       icon: Icons.ac_unit, // Changed from ice_flower to ac_unit
+    );
+  }
+  static Widget returnHomeIcon(BuildContext context, {double? size}) {
+    return MainButton(
+      type: "home",
+      destination: "/",
+      size: size,
+      mainFunction: () => {
+       context.go("/")
+      },
+      icon: Icons.home, // Changed from ice_flower to ac_unit
     );
   }
 
@@ -118,7 +125,7 @@ class _HomePageState extends State<HomePage> {
                 // Nút ElevatedButton
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: colorScheme.outline),
+                    // border: Border.all(color: colorScheme.outline),
                     color: colorScheme.outline,
                     borderRadius: BorderRadius.circular(10),
                   ),
