@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+//
 import 'package:provider/provider.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
@@ -9,26 +10,92 @@ import 'package:ice_shield/ui_layer/health_page/CaloriesMetrics.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
 import 'package:ice_shield/data_layer/Protocol/Health/HealthMetricsData.dart';
 import 'package:ice_shield/ui_layer/health_page/widgets/HealthPageHeader.dart';
+
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 
 class HealthPage extends StatefulWidget {
   const HealthPage({super.key});
 
+  // static void _showQuickActions(BuildContext context) {
+
+  //   setState(() {
+
+  //   })
+  //   // showModalBottomSheet(
+  //   //   context: context,
+  //   //   backgroundColor: Colors.transparent,
+  //   //   builder: (context) => Container(
+  //   //     decoration: BoxDecoration(
+  //   //       color: Theme.of(context).colorScheme.surface,
+  //   //       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+  //   //     ),
+  //   //     padding: const EdgeInsets.all(24),
+  //   //     child: Column(
+  //   //       mainAxisSize: MainAxisSize.min,
+  //   //       crossAxisAlignment: CrossAxisAlignment.start,
+  //   //       children: [
+  //   //         Text(
+  //   //           'Quick Actions',
+  //   //           style: Theme.of(
+  //   //             context,
+  //   //           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+  //   //         ),
+  //   //         const SizedBox(height: 24),
+  //   //         GridView.count(
+  //   //           shrinkWrap: true,
+  //   //           crossAxisCount: 4,
+  //   //           mainAxisSpacing: 16,
+  //   //           crossAxisSpacing: 16,
+  //   //           children: [
+  //   //             _buildQuickActionItem(
+  //   //               context,
+  //   //               'Log Food',
+  //   //               Icons.restaurant,
+  //   //               Colors.orange,
+  //   //             ),
+  //   //             _buildQuickActionItem(
+  //   //               context,
+  //   //               'Exercise',
+  //   //               Icons.fitness_center,
+  //   //               Colors.red,
+  //   //             ),
+  //   //             _buildQuickActionItem(
+  //   //               context,
+  //   //               'Sleep',
+  //   //               Icons.bedtime,
+  //   //               Colors.indigo,
+  //   //             ),
+  //   //             _buildQuickActionItem(
+  //   //               context,
+  //   //               'Water',
+  //   //               Icons.water_drop,
+  //   //               Colors.cyan,
+  //   //             ),
+  //   //           ],
+  //   //         ),
+  //   //       ),
+  //   //     ),
+  //   //   );
+  // }
+
   static Widget icon(BuildContext context, {double? size}) {
-    final colorScheme = Theme.of(context).colorScheme;
     return MainButton(
       type: "health",
       destination: "/health",
       size: size,
       mainFunction: () {
-        context.go('/health');
+        print("Main button clicked");
       },
-      icon: Icons.favorite,
+      icon: Icons.add,
       subButtons: [
         SubButton(
           icon: Icons.restaurant,
+          // size: 100,
           backgroundColor: Colors.orange,
-          onPressed: () => context.go('/health/food'),
+          onPressed: () {
+            print("Main button clicked");
+            context.go('/health/food');
+          },
         ),
         SubButton(
           icon: Icons.fitness_center,
@@ -43,9 +110,18 @@ class HealthPage extends StatefulWidget {
         SubButton(
           icon: Icons.water_drop,
           backgroundColor: Colors.cyan,
-          onPressed: () => context.go('/health/water'),
+          onPressed: () {
+            context.go('/health/water');
+            print("Water button clicked");
+          },
         ),
       ],
+      // isShow: false,
+      // onPressed: () {
+      //   setState(() {
+      //     isShow=true;
+      //   })
+      // },
     );
   }
 
@@ -55,248 +131,146 @@ class HealthPage extends StatefulWidget {
 
 class _HealthPageState extends State<HealthPage> {
   late AppDatabase database;
-  late HealthMealDAO _mealDao;
+  List<HealthMetric> _healthMetrics = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     database = context.read<AppDatabase>();
-    _mealDao = database.healthMealDAO;
+    _loadHealthData();
+  }
+
+  Future<void> _loadHealthData() async {
+    setState(() => _isLoading = true);
+
+    // Simulate loading delay for smooth animation
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    setState(() {
+      _healthMetrics = HealthMetricsData.getDefaultMetrics();
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final summary = HealthMetricsData.getDailySummary();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: StreamBuilder<List<DayWithMeal>>(
-        stream: _mealDao.watchDaysWithMeals(),
-        builder: (context, mealSnapshot) {
-          return StreamBuilder<HealthMetricsLocal?>(
-            stream: database
-                .select(database.healthMetricsTable)
-                .watchSingleOrNull(),
-            builder: (context, metricsSnapshot) {
-              final meals = mealSnapshot.data ?? [];
-              final metrics = metricsSnapshot.data;
+      body: Watch((context) {
+        return RefreshIndicator(
+          onRefresh: _loadHealthData,
+          child: CustomScrollView(
+            slivers: [
+              // Header Section
+              SliverToBoxAdapter(
+                child: HealthPageHeader(
+                  completedGoals: summary['completed'] ?? 0,
+                  totalGoals: summary['total'] ?? 0,
+                ),
+              ),
 
-              // Calculate real nutrition data
-              double protein = 0;
-              double carbs = 0;
-              double fat = 0;
-              int totalCals = 0;
-              for (var m in meals) {
-                totalCals += m.day.totalCalories;
-                protein += m.meal.protein;
-                carbs += m.meal.carbs;
-                fat += m.meal.fat;
-              }
+              // Spacing
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-              const dailyGoal = 2000;
-              final progress = (totalCals / dailyGoal).clamp(0.0, 1.0);
-
-              return RefreshIndicator(
-                onRefresh: () async => setState(() {}),
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: HealthPageHeader(
-                        completedGoals: (progress >= 1.0) ? 1 : 0,
-                        totalGoals: 5,
-                      ),
-                    ),
-
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Nutrition',
-                              style: textTheme.titleLarge?.copyWith(
+              // Featured Calorie Card
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0, bottom: 12),
+                        child: Text(
+                          'Nutrition',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: colorScheme.onSurface,
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () =>
-                                  context.go('/health/food/dashboard'),
-                              child: Text(
-                                'View Logs',
-                                style: TextStyle(color: colorScheme.primary),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
-                    ),
+                      CaloriesMainDisplay(
+                        netCalories: 1280,
+                        dailyGoal: 2000,
+                        calorieStatus: 'On Track',
+                        statusColor: Colors.green,
+                        progressPercentage: 64.0,
+                      ),
+                      const SizedBox(height: 12),
+                      MacronutrientSummary(
+                        protein: 45,
+                        carbs: 180,
+                        fat: 50,
+                        proteinGoal: 150,
+                        carbsGoal: 250,
+                        fatGoal: 70,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                        child: GestureDetector(
-                          onTap: () => context.go('/health/food/dashboard'),
-                          child: Column(
-                            children: [
-                              CaloriesMainDisplay(
-                                netCalories: totalCals,
-                                dailyGoal: dailyGoal,
-                                calorieStatus: totalCals > dailyGoal
-                                    ? 'Limit Reached'
-                                    : 'On Track',
-                                statusColor: totalCals > dailyGoal
-                                    ? colorScheme.error
-                                    : Colors.green,
-                                progressPercentage: progress * 100,
-                              ),
-                              const SizedBox(height: 16),
-                              MacronutrientSummary(
-                                protein: protein.toInt(),
-                                carbs: carbs.toInt(),
-                                fat: fat.toInt(),
-                                proteinGoal: 150,
-                                carbsGoal: 250,
-                                fatGoal: 70,
-                              ),
-                            ],
+              // Spacing
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+              // Health Metrics Section Header
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Text(
+                    'Health Metrics',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Spacing
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+              // Health Metrics Grid
+              _isLoading
+                  ? SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(48.0),
+                          child: CircularProgressIndicator(
+                            color: colorScheme.primary,
                           ),
                         ),
                       ),
-                    ),
-
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 32, 20, 16),
-                        child: Text(
-                          'Daily Activity',
-                          style: textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    SliverPadding(
+                    )
+                  : SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       sliver: SliverGrid(
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 1.1,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.95,
                             ),
-                        delegate: SliverChildListDelegate([
-                          _buildMetricCard(
-                            'Steps',
-                            '${metrics?.steps ?? 0}',
-                            Icons.directions_walk,
-                            colorScheme.primary,
-                            (metrics?.steps ?? 0) / 10000,
-                          ),
-                          _buildMetricCard(
-                            'Heart Rate',
-                            '${metrics?.heartRate ?? 0} bpm',
-                            Icons.favorite,
-                            colorScheme.error,
-                            null,
-                          ),
-                          _buildMetricCard(
-                            'Sleep',
-                            '${metrics?.sleepHours ?? 0}h',
-                            Icons.bedtime,
-                            colorScheme.tertiary,
-                            (metrics?.sleepHours ?? 0) / 8,
-                          ),
-                          _buildMetricCard(
-                            'Water',
-                            '${metrics?.waterGlasses ?? 0} cups',
-                            Icons.water_drop,
-                            colorScheme.secondary,
-                            (metrics?.waterGlasses ?? 0) / 8,
-                          ),
-                        ]),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          return HealthMetricCard(
+                            metric: _healthMetrics[index],
+                          );
+                        }, childCount: _healthMetrics.length),
                       ),
                     ),
 
-                    const SliverToBoxAdapter(child: SizedBox(height: 120)),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-    double? progress,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              if (progress != null)
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
+              // Bottom padding
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                title,
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 }

@@ -1,14 +1,10 @@
-import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 import 'dart:io';
-
-import 'package:ice_shield/data_layer/Protocol/Health/CaloriesProtocol.dart';
 
 class Aifoodcaloriesservices {
   final String _baseUrl = "https://backend.duylong.art/api/health/ai/calories";
 
-  Future<CaloriesProtocol> getCalories(String foodName, {File? image}) async {
+  Future<String> getCalories(String foodName, {File? image}) async {
     try {
       var request = http.MultipartRequest('POST', Uri.parse(_baseUrl));
 
@@ -25,13 +21,13 @@ class Aifoodcaloriesservices {
 
       if (response.statusCode == 200) {
         // Assuming the response body is just the calorie count as a string
-        return CaloriesProtocol.fromJson(jsonDecode(response.body));
+        return response.body;
       } else {
         throw Exception('Failed to get calories: ${response.statusCode}');
       }
     } catch (e) {
       print("Error in AIFoodCaloriesServices: $e");
-      return CaloriesProtocol.empty();
+      return "0";
     }
   }
 }

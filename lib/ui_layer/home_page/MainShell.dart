@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SettingWidget.dart';
-import 'package:ice_shield/ui_layer/health_page/subpage/FoodInputPage.dart';
 import 'package:ice_shield/ui_layer/home_page/HomePage.dart';
 import 'package:ice_shield/ui_layer/canvas_page/DragCanvasGridPage.dart';
 import 'package:ice_shield/ui_layer/user_page/PersonalInformationPage.dart';
@@ -42,7 +41,7 @@ class MainShell extends StatelessWidget {
         pageIcon = HealthPage.icon(context, size: responsiveSize);
         break;
       case '/health/food':
-        pageIcon = FoodInputPage.icon(context, size: responsiveSize);
+        pageIcon = HealthPage.icon(context, size: responsiveSize);
         break;
       case '/health/exercise':
         pageIcon = HealthPage.icon(context, size: responsiveSize);
@@ -68,7 +67,7 @@ class MainShell extends StatelessWidget {
         break;
       default:
         // Default to home icon
-        pageIcon = HomePage.returnHomeIcon(context, size: responsiveSize);
+        pageIcon = HomePage.icon(context, size: responsiveSize);
     }
 
     // Wrap with custom size
