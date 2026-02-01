@@ -148,7 +148,8 @@ class _HealthPageState extends State<HealthPage> {
     await Future.delayed(const Duration(milliseconds: 500));
 
     setState(() {
-      _healthMetrics = HealthMetricsData.getDefaultMetrics();
+      // _healthMetrics = HealthMetricsData.getDefaultMetrics();
+      _healthMetrics=HealthMetricsData.getMetricsByDay(DateTime.now(),context);
       _isLoading = false;
     });
   }
@@ -255,7 +256,7 @@ class _HealthPageState extends State<HealthPage> {
                               crossAxisCount: 2,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
-                              childAspectRatio: 0.95,
+                              childAspectRatio: 0.85,
                             ),
                         delegate: SliverChildBuilderDelegate((context, index) {
                           return HealthMetricCard(

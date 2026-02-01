@@ -1,28 +1,96 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:ice_shield/initial_layer/Services/Health/AIFoodCaloriesServices.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:signals_flutter/signals_core.dart';
+import 'package:signals_flutter/src/core/signal.dart';
+import 'package:path/path.dart' as path; // Add this alias to avoid conflicts
 
 class FoodInputPage extends StatefulWidget {
   const FoodInputPage({super.key});
 
   @override
   State<FoodInputPage> createState() => _FoodInputPageState();
+  static Widget icon(BuildContext context, {double? size}) {
+    return MainButton(
+      type: "health",
+      destination: "/health",
+      size: size,
+      mainFunction: () {
+        print("Main button clicked");
+        context.go('/health/food/dashboard');
+      },
+      icon: Icons.sunny,
+      subButtons: [
+        SubButton(
+          icon: Icons.restaurant,
+          // size: 100,
+          backgroundColor: Colors.orange,
+          onPressed: () {
+            print("Main button clicked");
+            context.go('/health/food');
+          },
+        ),
+        SubButton(
+          icon: Icons.fitness_center,
+          backgroundColor: Colors.red,
+          onPressed: () => context.go('/health/exercise'),
+        ),
+        SubButton(
+          icon: Icons.bedtime,
+          backgroundColor: Colors.indigo,
+          onPressed: () => context.go('/health/sleep'),
+        ),
+        SubButton(
+          icon: Icons.water_drop,
+          backgroundColor: Colors.cyan,
+          onPressed: () {
+            context.go('/health/water');
+            print("Water button clicked");
+          },
+        ),
+      ],
+      // isShow: false,
+      // onPressed: () {
+      //   setState(() {
+      //     isShow=true;
+      //   })
+      // },
+    );
+  }
 }
 
 class _FoodInputPageState extends State<FoodInputPage> {
   final _aiService = Aifoodcaloriesservices();
+  // final database = AppDatabase();
   bool _isAnalyzing = false;
   final List<Map<String, dynamic>> _meals = [
-    {'name': 'Breakfast', 'calories': 450, 'time': '08:30 AM'},
-    {'name': 'Lunch', 'calories': 650, 'time': '01:15 PM'},
+    // {'name': 'Breakfast', 'calories': 450, 'time': '08:30 AM'},
+    // {'name': 'Lunch', 'calories': 650, 'time': '01:15 PM'},
   ];
 
   final _foodController = TextEditingController();
   final _caloriesController = TextEditingController();
   File? _pickedImage;
+  String _imagePath = "";
   final ImagePicker _picker = ImagePicker();
+  FlutterSignal<double> totalCalories = signal(0);
+  late HealthMealDAO _healthMealDAO;
+  late Directory appDir;
+
+  @override
+  void didChangeDependencies() async {
+    super.didChangeDependencies();
+    _healthMealDAO = context.read<HealthMealDAO>();
+    appDir = await getApplicationDocumentsDirectory();
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -32,9 +100,23 @@ class _FoodInputPageState extends State<FoodInputPage> {
         maxHeight: 1000,
         imageQuality: 85,
       );
-      if (image != null) {
+
+      print("Path when I pick image: " + image!.path);
+      // Sử dụng path_provider
+
+      //  final Directory appDir=await
+      final String fileName = path.basename(image.path);
+      final File savedImage = await File(
+        image.path,
+      ).copy('${appDir.path}/$fileName');
+      // final String fileName = path.basename(image!.path);
+      //   final String permanentPath = '${appDir.path}/$fileName';
+
+      if (savedImage != null) {
         setState(() {
-          _pickedImage = File(image.path);
+          _pickedImage = File(savedImage.path);
+          _imagePath = fileName;
+          print("Path when I save image: " + savedImage.path);
         });
         // Trigger AI analysis if food name is also present or just analysis from image
         _analyzeFood();
@@ -57,7 +139,14 @@ class _FoodInputPageState extends State<FoodInputPage> {
 
       if (mounted) {
         setState(() {
-          _caloriesController.text = calories;
+          _caloriesController.text =
+              calories.carbs.toString() +
+              "|" +
+              calories.protein.toString() +
+              "|" +
+              calories.fat.toString() +
+              "|" +
+              calories.calories.toString();
           _isAnalyzing = false;
         });
       }
@@ -67,16 +156,49 @@ class _FoodInputPageState extends State<FoodInputPage> {
     }
   }
 
-  void _addMeal() {
+  Future<void> _addMeal() async {
     if (_foodController.text.isNotEmpty &&
         _caloriesController.text.isNotEmpty) {
+      final energy = _caloriesController.text.split("|");
+      final carbs = double.tryParse(energy[0]) ?? 0.0;
+      final protein = double.tryParse(energy[1]) ?? 0.0;
+      final fat = double.tryParse(energy[2]) ?? 0.0;
+      final calories = double.tryParse(energy[3]) ?? 0.0;
+
+      // final totalCalories = (carbs + protein + fat).toInt();
+
+      final now = DateTime.now();
+
+      // 1. Insert Meal details
+      final mealId = await _healthMealDAO.insertMeal(
+        MealsTableCompanion.insert(
+          mealName: _foodController.text,
+
+          mealImageUrl: Value(_imagePath),
+          carbs: Value(carbs),
+          protein: Value(protein),
+          fat: Value(fat),
+          calories: Value(calories),
+          eatenAt: Value(now),
+        ),
+      );
+
+      // 2. Insert Day log
+      await _healthMealDAO.insertDay(
+        DaysTableCompanion.insert(
+          dayID: now,
+          caloriesOut: Value(0),
+          weight: Value(0),
+        ),
+      );
+
       setState(() {
-        _meals.add({
-          'name': _foodController.text,
-          'calories': int.tryParse(_caloriesController.text) ?? 0,
-          'time': 'Just now',
-          'image': _pickedImage,
-        });
+        // _meals.add({
+        //   'name': _foodController.text,
+        //   'calories': calories.toInt(),
+        //   'time': now.toString(),
+        //   'image': _pickedImage,
+        // });
         _foodController.clear();
         _caloriesController.clear();
         _pickedImage = null;
@@ -84,15 +206,36 @@ class _FoodInputPageState extends State<FoodInputPage> {
     }
   }
 
+  Future<void> _getTotalCalories() async {
+    final calories = await _healthMealDAO.getCaloriesByDate(DateTime.now());
+    if (mounted) {
+      totalCalories.value = calories;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 1. Initialize the DAO immediately (Provider access is safe here if using context.read)
+    _healthMealDAO = context.read<HealthMealDAO>();
+
+    // 2. Load the directory and THEN load calories
+    getApplicationDocumentsDirectory().then((dir) {
+      if (mounted) {
+        setState(() {
+          appDir = dir;
+        });
+        _getTotalCalories(); // Now safe to call
+      }
+    });
+  }
+
+  // Remove didChangeDependencies entirely unless you have other logic there
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
-    int totalCalories = _meals.fold(
-      0,
-      (sum, item) => sum + (item['calories'] as int),
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -116,7 +259,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                   children: [
                     AutoSizeText(
                       'Today\'s Intake',
-                      style: textTheme.titleMedium,
+                      style: textTheme.titleSmall,
                       maxLines: 1,
                     ),
                     const SizedBox(height: 8),
@@ -128,11 +271,11 @@ class _FoodInputPageState extends State<FoodInputPage> {
                       ),
                       maxLines: 1,
                     ),
-                    AutoSizeText(
-                      'Goal: 2000 kcal',
-                      style: textTheme.bodySmall,
-                      maxLines: 1,
-                    ),
+                    // AutoSizeText(
+                    //   'Goal: 2000 kcal',
+                    //   style: textTheme.bodySmall,
+                    //   maxLines: 1,
+                    // ),
                   ],
                 ),
               ),
@@ -146,35 +289,92 @@ class _FoodInputPageState extends State<FoodInputPage> {
               maxLines: 1,
             ),
             const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _meals.length,
-              separatorBuilder: (context, index) => const Divider(),
-              itemBuilder: (context, index) {
-                final meal = _meals[index];
-                return ListTile(
-                  leading: meal['image'] != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            meal['image'] as File,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
+            // 1. Dùng StreamBuilder để lắng nghe thay đổi từ Database
+            StreamBuilder<List<DayWithMeal>>(
+              stream: _healthMealDAO
+                  .watchDaysWithMeals(), // Gọi hàm watch từ database
+              builder: (context, snapshot) {
+                // 2. Xử lý các trạng thái loading/error
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                }
+
+                // 3. Lấy dữ liệu từ snapshot
+                final mealsList = snapshot.data ?? [];
+
+                if (mealsList.isEmpty) {
+                  return const Text("No meals added yet");
+                }
+
+                // 4. Render danh sách (Code cũ của bạn nằm ở đây)
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: mealsList.length, // Dùng độ dài list từ DB
+                  separatorBuilder: (context, index) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final meal =
+                        mealsList[index]; // meal là Object, không phải Map
+
+                    return ListTile(
+                      // --- XỬ LÝ ẢNH ---
+                      // Lưu ý: Database thường lưu đường dẫn ảnh (String), không lưu File trực tiếp.
+                      // Giả sử meal.imagePath là đường dẫn file.
+                      // Thay thế đoạn Image.file trong ListTile bằng đoạn này:
+                      leading:
+                          meal.meal.mealImageUrl != null &&
+                              meal.meal.mealImageUrl!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File(
+                                  '${appDir.path}/${meal.meal.mealImageUrl!}',
+                                ), // Nối thư mục hiện tại với tên file
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                      Icons.broken_image,
+                                    ), // Chống crash nếu file bị xóa
+                              ),
+                            )
+                          : const CircleAvatar(child: Icon(Icons.restaurant)),
+
+                      // --- HIỂN THỊ TEXT ---
+                      // Thay meal['name'] bằng meal.name
+                      title: AutoSizeText(meal.meal.mealName, maxLines: 1),
+                      subtitle: Row(
+                        children: [
+                          AutoSizeText(
+                            meal.meal.eatenAt.toString(),
+                            maxLines: 1,
                           ),
-                        )
-                      : const CircleAvatar(child: Icon(Icons.restaurant)),
-                  title: AutoSizeText(meal['name'], maxLines: 1),
-                  subtitle: AutoSizeText(meal['time'], maxLines: 1),
-                  trailing: AutoSizeText(
-                    '+${meal['calories']} kcal',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                    maxLines: 1,
-                  ),
+                          const SizedBox(width: 8),
+                          AutoSizeText(
+                            _timeInDay(meal.meal.eatenAt)['label']!,
+                            style: TextStyle(
+                              color: _getMealColor(meal.meal.eatenAt),
+                              fontWeight: FontWeight.bold,
+                            ),
+
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
+
+                      // --- TRAILING ---
+                      // Giả sử bạn muốn hiển thị calories hoặc giá tiền
+                      trailing: AutoSizeText(
+                        meal.meal.calories.toString() + " kcal",
+                        maxLines: 1,
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -240,16 +440,12 @@ class _FoodInputPageState extends State<FoodInputPage> {
                     child: _pickedImage != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.file(_pickedImage!, fit: BoxFit.cover),
+                            child: Image.file(
+                              File(appDir.path + "/" + _imagePath),
+                              fit: BoxFit.cover,
+                            ),
                           )
-                        : const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_a_photo, size: 40),
-                              SizedBox(height: 8),
-                              Text('Add Food Photo'),
-                            ],
-                          ),
+                        : const Icon(Icons.add_a_photo, size: 40),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -269,7 +465,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                 TextField(
                   controller: _caloriesController,
                   decoration: InputDecoration(
-                    labelText: 'Calories',
+                    labelText: 'Energy',
                     border: const OutlineInputBorder(),
                     suffixIcon: _isAnalyzing
                         ? const Padding(
@@ -311,4 +507,25 @@ class _FoodInputPageState extends State<FoodInputPage> {
       ),
     );
   }
+}
+
+Map<String, dynamic> _timeInDay(DateTime time) {
+  final hour = time.hour;
+
+  if (hour >= 5 && hour < 12) {
+    return {'label': 'BREAKFAST', 'color': 0xFFFFB74D}; // Orange
+  } else if (hour >= 12 && hour < 17) {
+    return {'label': 'LUNCH', 'color': 0xFF81C784}; // Green
+  } else if (hour >= 17 && hour < 21) {
+    return {'label': 'DINNER', 'color': 0xFF64B5F6}; // Blue
+  } else {
+    return {'label': 'Snack', 'color': 0xFFBA68C8}; // Purple
+  }
+}
+
+Color _getMealColor(DateTime time) {
+  final hour = time.hour;
+  if (hour < 11) return Colors.green;
+  if (hour < 16) return Colors.orange;
+  return Colors.blue;
 }

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+// import 'package:http/http.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:provider/provider.dart' show ReadContext;
 import 'package:signals_flutter/signals_flutter.dart';
 // Required for context.read
 
+import '../../data_layer/Protocol/Canvas/ExternalWidgetProtocol.dart';
 import '../../initial_layer/FireAPI/UrlNavigate.dart';
 import '../../data_layer/Protocol/Canvas/InternalWidgetDragProtocol.dart';
 import '../../orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
@@ -16,11 +20,8 @@ class ExternalDragWidget extends StatefulWidget {
   final int index;
   final WidgetManagerBlock store;
 
-  const ExternalDragWidget({
-    super.key,
-    required this.index,
-    required this.store,
-  });
+  late ExternalWidgetsDAO widgetDAO;
+  ExternalDragWidget({super.key, required this.index, required this.store});
 
   @override
   State<ExternalDragWidget> createState() => _ExternalDragWidgetState();
@@ -32,7 +33,7 @@ class _ExternalDragWidgetState extends State<ExternalDragWidget> {
   @override
   Widget build(BuildContext context) {
     // 1. Added the DAO access here as requested
-    // final dao = context.read<ExternalWidgetsDAO>();
+    widget.widgetDAO = context.read<ExternalWidgetsDAO>();
 
     // OBSERVER: Rebuilds specific cell if its specific data changes
     return Watch((context) {
@@ -65,8 +66,16 @@ class _ExternalDragWidgetState extends State<ExternalDragWidget> {
             // Add to MobX Store
             widget.store.addWidget(widget.index, incomingData);
 
+            final externalWidgetProtocol = ExternalWidgetProtocol(
+              name: incomingData.name,
+              protocol: incomingData.protocol,
+              host: incomingData.host,
+              url: incomingData.url,
+            );
             // TODO: You can use 'dao' here to persist the new item
-            // dao.insertWidget(incomingData);
+            widget.widgetDAO.insertNewWidget(
+              externalWidgetProtocol: externalWidgetProtocol,
+            );
           }
         },
         builder: (context, candidateData, rejectedData) {

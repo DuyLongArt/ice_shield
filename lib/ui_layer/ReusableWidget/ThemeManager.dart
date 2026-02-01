@@ -8,7 +8,13 @@ class ThemeManager {
     return IconButton(
       icon: const Icon(Icons.palette),
       tooltip: "Change Theme",
-      onPressed: () => showThemeSelectionDialog(context),
+      onPressed: () => {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            showThemeSelectionDialog(context);
+          }
+        }),
+      },
     );
   }
 
@@ -16,61 +22,61 @@ class ThemeManager {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const AutoSizeText('Select Theme', maxLines: 1),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildThemeOption(
-                  context,
-                  'Default',
-                  'assets/DefaultTheme.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Light Purple',
-                  'assets/LightThemePurple.json',
-                ),
-
-                _buildThemeOption(
-                  context,
-                  'Purple Seed',
-                  'assets/PurpleSeed.json',
-                ),
-                const Divider(),
-                _buildThemeOption(context, 'Seed Blue', 'assets/SeedBlue.json'),
-                _buildThemeOption(
-                  context,
-                  'Seed Green',
-                  'assets/SeedGreen.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Seed Orange',
-                  'assets/SeedOrange.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Seed Pink (Dark)',
-                  'assets/SeedPink.json',
-                ),
-                _buildThemeOption(context, 'Seed Red', 'assets/SeedRed.json'),
-                _buildThemeOption(context, 'Seed Teal', 'assets/SeedTeal.json'),
-                _buildThemeOption(
-                  context,
-                  'Seed Indigo',
-                  'assets/SeedIndigo.json',
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const AutoSizeText('Cancel', maxLines: 1),
-            ),
-          ],
+        final width=MediaQuery.of(context).size.width;
+        return 
+        Align(
+      alignment: Alignment.center, // Keeps it strictly centered
+      // child: Material( // Required for elevation/styling when not using AlertDialog
+      //   color: Colors.transparent,
+      child:Container(
+          width: width*0.5,
+      
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline,
+          width: 1,
+        ),
+      ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // const SizedBox(height: 16),
+              _buildThemeOption(context, 'Default', 'assets/DefaultTheme.json'),
+              _buildThemeOption(
+                context,
+                'Light Purple',
+                'assets/LightThemePurple.json',
+              ),
+              _buildThemeOption(
+                context,
+                'Purple Seed',
+                'assets/PurpleSeed.json',
+              ),
+              const Divider(),
+              _buildThemeOption(context, 'Seed Blue', 'assets/SeedBlue.json'),
+              _buildThemeOption(context, 'Seed Green', 'assets/SeedGreen.json'),
+              _buildThemeOption(
+                context,
+                'Seed Orange',
+                'assets/SeedOrange.json',
+              ),
+              _buildThemeOption(
+                context,
+                'Seed Pink (Dark)',
+                'assets/SeedPink.json',
+              ),
+              _buildThemeOption(context, 'Seed Red', 'assets/SeedRed.json'),
+              _buildThemeOption(context, 'Seed Teal', 'assets/SeedTeal.json'),
+              _buildThemeOption(
+                context,
+                'Seed Indigo',
+                'assets/SeedIndigo.json',
+              ),
+            ],
+          // ),
+        ))
         );
       },
     );
@@ -81,10 +87,18 @@ class ThemeManager {
     String name,
     String assetPath,
   ) {
-    return ListTile(
-      title: AutoSizeText(name, maxLines: 1),
-      onTap: () {
-        // Access ThemeStore and load the selected theme
+    final width=MediaQuery.of(context).size.width;
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        // backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(0),
+        ),
+      ),
+      child: Container(width: width*0.5, child: Text(name, maxLines: 1)),
+      
+      onPressed: () {
         Provider.of<ThemeStore>(context, listen: false).loadTheme(assetPath);
         Navigator.of(context).pop();
       },

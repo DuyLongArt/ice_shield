@@ -91,11 +91,21 @@ class DragCanvas extends StatefulWidget {
 
 class _DragCanvasState extends State<DragCanvas> {
   bool isClick = false;
+  // late WidgetManagerBlock widgetBlock;
+
+  @override
+  void initState() {
+    super.initState();
+    // Chạy sau khi build xong để tránh SignalEffectException
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WidgetManagerBlock>().loadFromDatabase();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final widgetBlock = Provider.of<WidgetManagerBlock>(context);
-
+    // listen: false vì chúng ta đã dùng Watch để quản lý các phần thay đổi
+    final widgetBlock = Provider.of<WidgetManagerBlock>(context, listen: false);
     return Column(
       children: [
         // HEADER
@@ -239,6 +249,7 @@ class _DragCanvasState extends State<DragCanvas> {
 
         // LIBRARY / STORE
         // const Padding(padding: EdgeInsets.symmetric(vertical: 16)),
+        const SizedBox(height: 2),
         const StoreWidget(),
       ],
     );

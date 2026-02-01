@@ -409,6 +409,48 @@ class PersonWidgetsTable extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+@DataClassName('HealthMetricsLocal')
+class HealthMetricsTable extends Table {
+  IntColumn get metricID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  DateTimeColumn get date => dateTime()();
+  IntColumn get steps => integer().withDefault(const Constant(0))();
+  IntColumn get heartRate => integer().withDefault(const Constant(0))();
+  RealColumn get sleepHours => real().withDefault(const Constant(0.0))();
+  IntColumn get waterGlasses => integer().withDefault(const Constant(0))();
+  IntColumn get exerciseMinutes => integer().withDefault(const Constant(0))();
+  RealColumn get weightKg => real().withDefault(const Constant(0.0))();
+  IntColumn get caloriesConsumed => integer().withDefault(const Constant(0))();
+  IntColumn get caloriesBurned => integer().withDefault(const Constant(0))();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('MealData')
+class MealsTable extends Table {
+  IntColumn get mealID => integer().named("meal_id").autoIncrement()();
+  TextColumn get mealName =>
+      text().withLength(min: 1, max: 50)(); // breakfast, lunch, etc.
+  TextColumn get mealImageUrl => text().nullable()();
+  RealColumn get fat => real().withDefault(const Constant(0.0))();
+  RealColumn get carbs => real().withDefault(const Constant(0.0))();
+  RealColumn get protein => real().withDefault(const Constant(0.0))();
+  RealColumn get calories => real().withDefault(const Constant(0.0))();
+  DateTimeColumn get eatenAt => dateTime().withDefault(currentDateAndTime)();
+  // DateColumn get date => dateTime().withDefault(currentDate)();
+}
+
+@DataClassName('DayData')
+class DaysTable extends Table {
+  DateTimeColumn get dayID => dateTime().named('day_id')();
+  IntColumn get weight => integer().withDefault(const Constant(0))();
+  // DateTimeColumn get entryDateTime => dateTime()();
+  IntColumn get caloriesOut => integer().withDefault(const Constant(0))();
+}
+
 @DataClassName('SessionData')
 class SessionTable extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -997,13 +1039,134 @@ class SessionDAO extends DatabaseAccessor<AppDatabase> with _$SessionDAOMixin {
   Future<void> clearSession() => delete(sessionTable).go();
 }
 
+@DriftAccessor(tables: [HealthMetricsTable])
+class HealthMetricsDAO extends DatabaseAccessor<AppDatabase>
+    with _$HealthMetricsDAOMixin {
+  HealthMetricsDAO(super.db);
+
+  Stream<List<HealthMetricsLocal>> watchAllMetrics(int personID) {
+    return (select(healthMetricsTable)
+          ..where((t) => t.personID.equals(personID))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc),
+          ]))
+        .watch();
+  }
+
+  Future<HealthMetricsLocal?> getMetricsForDate(int personID, DateTime date) {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    return (select(healthMetricsTable)..where(
+          (t) =>
+              t.personID.equals(personID) &
+              t.date.isBiggerOrEqualValue(startOfDay) &
+              t.date.isSmallerThanValue(endOfDay),
+        ))
+        .getSingleOrNull();
+  }
+
+  Future<int> insertOrUpdateMetrics(HealthMetricsTableCompanion entry) {
+    return into(healthMetricsTable).insertOnConflictUpdate(entry);
+  }
+
+  Future<int> deleteMetricsForPerson(int personID) {
+    return (delete(
+      healthMetricsTable,
+    )..where((t) => t.personID.equals(personID))).go();
+  }
+}
+
+@DriftAccessor(tables: [MealsTable, DaysTable])
+class HealthMealDAO extends DatabaseAccessor<AppDatabase>
+    with _$HealthMealDAOMixin {
+  HealthMealDAO(super.db);
+
+  // Meals
+  Future<int> insertMeal(MealsTableCompanion meal) =>
+      into(mealsTable).insert(meal);
+  Future<List<MealData>> getAllMeals() => select(mealsTable).get();
+  Future<MealData?> getMealById(int id) =>
+      (select(mealsTable)..where((t) => t.mealID.equals(id))).getSingleOrNull();
+
+  // Days (Meal Logs)
+  Future<int> insertDay(DaysTableCompanion day) => into(daysTable).insert(day);
+  Future<double> getCaloriesByDate(DateTime date) async {
+    final rows =
+        await (select(mealsTable)..where(
+              (tbl) => tbl.eatenAt.date.equals(
+                date.toIso8601String().substring(0, 10),
+              ),
+            ))
+            .get();
+
+    // Sum the calories
+    double calories = 0.0;
+    for (var row in rows) {
+      calories += row.calories;
+    }
+    return calories;
+  }
+
+  Future<List<DayWithMeal>> getHealthMetricByDay(DateTime date) {
+    // final startOfDay = DateTime(date.year, date.month, date.day);
+    // final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final query =
+        select(daysTable).join([
+            innerJoin(
+              mealsTable,
+              // Trích xuất phần ngày từ eatenAt để so sánh với dayID
+              mealsTable.eatenAt.date.equalsExp(daysTable.dayID.date),
+            ),
+          ])
+          // So sánh phần ngày của dayID với ngày được truyền vào từ tham số
+          ..where(
+            daysTable.dayID.date.equals(
+              date.toIso8601String().substring(0, 10),
+            ),
+          );
+
+    return query.get().then((rows) {
+      return rows.map((row) {
+        return DayWithMeal(
+          day: row.readTable(daysTable),
+          meal: row.readTable(mealsTable),
+        );
+      }).toList();
+    });
+  }
+
+  Stream<List<DayWithMeal>> watchDaysWithMeals() {
+    final query = select(daysTable).join([
+      innerJoin(mealsTable, mealsTable.eatenAt.equalsExp(daysTable.dayID)),
+    ]);
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        return DayWithMeal(
+          day: row.readTable(daysTable),
+          meal: row.readTable(mealsTable),
+        );
+      }).toList();
+    });
+  }
+}
+
+class DayWithMeal {
+  final DayData day;
+  final MealData meal;
+
+  DayWithMeal({required this.day, required this.meal});
+}
+
 // --- 5. Database Connection Helper ---
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     print("Database directory: ${dbFolder.path}");
-    final file = File(p.join(dbFolder.path, 'db22223834.sqlite'));
+    final file = File(p.join(dbFolder.path, 'db3.sqlite'));
 
     try {
       if (await file.exists()) {
@@ -1045,6 +1208,9 @@ LazyDatabase _openConnection() {
     PersonWidgetsTable,
     CVAddressesTable,
     SessionTable,
+    HealthMetricsTable,
+    MealsTable,
+    DaysTable,
   ],
   daos: [
     ThemesTableDAO,
@@ -1059,13 +1225,15 @@ LazyDatabase _openConnection() {
     WidgetDAO,
     PersonDAO,
     SessionDAO,
+    HealthMetricsDAO,
+    HealthMealDAO,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4; // Increment schema version
+  int get schemaVersion => 7; // Increment schema version
 
   // Migration strategy would be needed here for a real app update
   @override
@@ -1094,6 +1262,13 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4) {
           await m.createTable(sessionTable);
+        }
+        if (from < 5) {
+          await m.createTable(healthMetricsTable);
+        }
+        if (from < 6) {
+          await m.createTable(mealsTable);
+          await m.createTable(daysTable);
         }
       },
     );

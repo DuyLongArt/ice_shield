@@ -41,12 +41,11 @@ class CaloriesBreakdownCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 4.0,
-      color: color.withOpacity(0.1),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
-        side: BorderSide(color: color, width: 2),
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(color: color, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -92,9 +91,15 @@ class CaloriesStatCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 4.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: colorScheme.outline,
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -150,12 +155,16 @@ class CaloriesMainDisplay extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 8.0,
-      // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      // child: Padding(
-      // padding: const EdgeInsets.all(24.0),
-      borderOnForeground: false,
+    return Container(
+      padding: const EdgeInsets.all(24.0),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: colorScheme.outline,
+          width: 1,
+        ),
+      ),
       child: Column(
         children: [
           Text(
@@ -244,10 +253,17 @@ class MacronutrientCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      elevation: 4.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: colorScheme.outline,
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -354,10 +370,16 @@ class MacronutrientSummary extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      elevation: 6.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-      // child: Padding(
+    return Container(
+      padding: const EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: colorScheme.outline,
+          width: 1,
+        ),
+      ),
       // padding: const EdgeInsets.all(20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 
 import 'package:intl/intl.dart';
@@ -248,7 +249,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
       });
       // ... error handling
     }
-  }
+  }  
 
   @override
   Widget build(BuildContext context) {
@@ -597,6 +598,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
                       ),
                       onPressed: () {
                         _authBlock.logout();
+                        context.go("/login");
                       },
                     ),
                   ),

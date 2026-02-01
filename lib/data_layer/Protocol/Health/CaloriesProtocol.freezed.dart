@@ -11,7 +11,6 @@ part of 'CaloriesProtocol.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$CaloriesProtocol {
 
@@ -22,8 +21,6 @@ mixin _$CaloriesProtocol {
 @pragma('vm:prefer-inline')
 $CaloriesProtocolCopyWith<CaloriesProtocol> get copyWith => _$CaloriesProtocolCopyWithImpl<CaloriesProtocol>(this as CaloriesProtocol, _$identity);
 
-  /// Serializes this CaloriesProtocol to a JSON map.
-  Map<String, dynamic> toJson();
 
 
 @override
@@ -31,7 +28,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is CaloriesProtocol&&(identical(other.calories, calories) || other.calories == calories)&&(identical(other.protein, protein) || other.protein == protein)&&(identical(other.carbs, carbs) || other.carbs == carbs)&&(identical(other.fat, fat) || other.fat == fat));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,calories,protein,carbs,fat);
 
@@ -209,11 +206,11 @@ return $default(_that.calories,_that.protein,_that.carbs,_that.fat);case _:
 }
 
 /// @nodoc
-@JsonSerializable()
+
 
 class _CaloriesProtocol implements CaloriesProtocol {
   const _CaloriesProtocol({required this.calories, required this.protein, required this.carbs, required this.fat});
-  factory _CaloriesProtocol.fromJson(Map<String, dynamic> json) => _$CaloriesProtocolFromJson(json);
+  
 
 @override final  int calories;
 @override final  int protein;
@@ -226,17 +223,14 @@ class _CaloriesProtocol implements CaloriesProtocol {
 @pragma('vm:prefer-inline')
 _$CaloriesProtocolCopyWith<_CaloriesProtocol> get copyWith => __$CaloriesProtocolCopyWithImpl<_CaloriesProtocol>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson() {
-  return _$CaloriesProtocolToJson(this, );
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _CaloriesProtocol&&(identical(other.calories, calories) || other.calories == calories)&&(identical(other.protein, protein) || other.protein == protein)&&(identical(other.carbs, carbs) || other.carbs == carbs)&&(identical(other.fat, fat) || other.fat == fat));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,calories,protein,carbs,fat);
 

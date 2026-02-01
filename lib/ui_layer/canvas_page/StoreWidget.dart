@@ -139,6 +139,7 @@ class StoreWidget extends StatelessWidget {
                     height: 80,
                     decoration: BoxDecoration(
                       // color: Colors.white.withOpacity(0.1),
+                      // border: Border.all(color: Colors.white),
                       // borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Column(
@@ -158,8 +159,9 @@ class StoreWidget extends StatelessWidget {
 
               final item = combinedList[index - 1]; // Adjust index
 
-              return Padding(
-                padding: const EdgeInsets.only(top: 5, bottom: 5),
+              return Container(
+                padding: const EdgeInsets.only(top: 35, bottom: 10),
+                width: MediaQuery.sizeOf(context).height * 0.09,
                 child: Draggable<InternalWidgetDragProtocol>(
                   // Logic: IDGen in the Grid will handle creating a unique ID upon drop
                   data: item,
@@ -171,8 +173,8 @@ class StoreWidget extends StatelessWidget {
                       child: BuildCard(
                         item: item,
                         isDragging: true,
-                        cardWidth: 80,
-                        cardHeight: 80,
+                        cardWidth: MediaQuery.sizeOf(context).height * 0.09,
+                        cardHeight: MediaQuery.sizeOf(context).height * 0.09,
                       ),
                     ),
                   ),

@@ -169,7 +169,7 @@ class PersonBlock {
         firstName: 'Initial',
         lastName: 'Loading...',
         profileImageUrl:
-            'http://192.168.22.4:9000/duylongwebappobjectdatabase/admin.png',
+            'https://backend.duylong.art/object/publish/default_avatar.png',
       ),
     ),
   );

@@ -17,7 +17,10 @@ class WidgetManagerBlock {
     required ReadonlySignal<int?> personIdSignal,
   }) : _widgetDao = widgetDao,
        _personIdSignal = personIdSignal {
-    _initializeGrid();
+    print("widgets: ${widgets.value}");
+    if (widgets.value.isEmpty) {
+      _initializeGrid();
+    }
 
     // Use an effect to reactively load whenever the personId becomes available
     _effectCleanup = effect(() {
@@ -35,7 +38,7 @@ class WidgetManagerBlock {
   void _initializeGrid() {
     widgets.clear();
     final initialData = List.generate(
-      100,
+      15,
       (_) => InternalWidgetDragProtocol.empty(),
     );
     widgets.addAll(initialData);
@@ -49,31 +52,38 @@ class WidgetManagerBlock {
   // ==================================================
   // 2. PERSISTENCE
   // ==================================================
-
   Future<void> loadFromDatabase() async {
     final personId = _personIdSignal.value;
     if (_widgetDao == null || personId == null) return;
 
     try {
       final dbWidgets = await _widgetDao.getAllWidgets(personId);
-      if (dbWidgets.isNotEmpty) {
-        // Clear and re-init empty grid first
-        _initializeGrid();
 
-        for (final dbWidget in dbWidgets) {
-          final index = dbWidget.displayOrder;
-          if (index >= 0 && index < widgets.length) {
-            try {
-              final Map<String, dynamic> json = jsonDecode(
-                dbWidget.configuration,
-              );
-              widgets[index] = InternalWidgetDragProtocol.fromJson(json);
-            } catch (e) {
-              print("Error decoding widget at index $index: $e");
-            }
+      // Tạo một bản sao danh sách hiện tại (danh sách trống 15 phần tử)
+      final List<InternalWidgetDragProtocol> nextGrid = List.generate(
+        15,
+        (_) => InternalWidgetDragProtocol.empty(),
+      );
+
+      for (final dbWidget in dbWidgets) {
+        final index = dbWidget.displayOrder;
+        if (index >= 0 && index < nextGrid.length) {
+          try {
+            final Map<String, dynamic> json = jsonDecode(
+              dbWidget.configuration,
+            );
+            nextGrid[index] = InternalWidgetDragProtocol.fromJson(json);
+          } catch (e) {
+            print("Error decoding: $e");
           }
         }
       }
+
+      // Cập nhật signal MỘT LẦN DUY NHẤT ở cuối
+      // Dùng Future.microtask để đảm bảo không xung đột với chu kỳ build hiện tại
+      Future.microtask(() {
+        widgets.value = nextGrid;
+      });
     } catch (e) {
       print("Error loading widgets from database: $e");
     }

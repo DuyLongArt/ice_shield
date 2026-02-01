@@ -1,33 +1,85 @@
-import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:ice_shield/data_layer/Protocol/Health/CaloriesProtocol.dart';
 
 class Aifoodcaloriesservices {
-  final String _baseUrl = "https://backend.duylong.art/api/health/ai/calories";
+  final String _baseUrl = "http://192.168.2.5:8123/runs/stream";
 
-  Future<String> getCalories(String foodName, {File? image}) async {
+  Future<CaloriesProtocol> getCalories(String foodName, {File? image}) async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse(_baseUrl));
-
-      request.fields['foodName'] = foodName;
-
+      String? base64Image;
       if (image != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath('image', image.path),
-        );
+        base64Image = base64Encode(await image.readAsBytes());
       }
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      final Map<String, dynamic> requestBody = {
+        "assistant_id": "agent",
+        "input": {
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Please analyze this $foodName image.",
+                },
+                if (base64Image != null)
+                  {
+                    "type": "image_url",
+                    "image_url": {"url": "data:image/jpeg;base64,$base64Image"},
+                  },
+              ],
+            },
+          ],
+        },
+        "stream_mode": "values",
+      };
 
-      if (response.statusCode == 200) {
-        // Assuming the response body is just the calorie count as a string
-        return response.body;
-      } else {
-        throw Exception('Failed to get calories: ${response.statusCode}');
+      final request = http.Request('POST', Uri.parse(_baseUrl))
+        ..headers['Content-Type'] = 'application/json'
+        ..body = jsonEncode(requestBody);
+
+      final streamedResponse = await request.send();
+
+      if (streamedResponse.statusCode == 200) {
+        String lastDataChunk = "";
+
+        // Listen to the stream and capture the LAST 'data' block
+        await for (var line
+            in streamedResponse.stream
+                .transform(utf8.decoder)
+                .transform(const LineSplitter())) {
+          if (line.startsWith('data: ')) {
+            lastDataChunk = line.substring(6);
+          }
+        }
+
+        if (lastDataChunk.isNotEmpty) {
+          final Map<String, dynamic> fullState = jsonDecode(lastDataChunk);
+
+          // LangGraph "values" mode returns the full state including the messages list
+          final List<dynamic> messages = fullState['messages'] ?? [];
+
+          // Find the last message with content (the AI's JSON string)
+          final aiMessage = messages.lastWhere(
+            (m) => m['type'] == 'ai' && m['content'].toString().isNotEmpty,
+            orElse: () => null,
+          );
+
+          if (aiMessage != null) {
+            // The content itself is a JSON string: "{"fat": 20, ...}"
+            final Map<String, dynamic> calorieData = jsonDecode(
+              aiMessage['content'],
+            );
+            return CaloriesProtocol.fromJson(calorieData);
+          }
+        }
       }
+      throw Exception('Failed to get valid data from stream');
     } catch (e) {
       print("Error in AIFoodCaloriesServices: $e");
-      return "0";
+      return CaloriesProtocol.empty();
     }
   }
 }

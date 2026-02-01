@@ -110,6 +110,7 @@ class SettingsWidget extends StatelessWidget {
             settingTitle: 'Change Theme',
             icon: Icons.palette,
             onTap: () {
+              // Navigator.of(context).pop();
               ThemeManager.showThemeSelectionDialog(context);
             },
           ),

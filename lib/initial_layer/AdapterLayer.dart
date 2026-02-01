@@ -85,7 +85,7 @@ class _adapterState extends State<Adapter> {
       authService: CustomAuthService(baseUrl: 'https://backend.duylong.art'),
       sessionDao: appDatabase.sessionDAO,
     );
-    authBlock.checkSession();
+    authBlock.checkSession(context);
   }
 
   @override

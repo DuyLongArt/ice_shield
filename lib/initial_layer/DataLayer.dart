@@ -82,7 +82,7 @@ class _DataLayerState extends State<DataLayer> {
       objectDatabaseBlock = ObjectDatabaseBlock();
 
       // Check session immediately on startup
-      authBlock.checkSession();
+      authBlock.checkSession(context);
 
       // Await asset loading
       String jsonString = await rootBundle.loadString(
@@ -220,6 +220,7 @@ class _DataLayerState extends State<DataLayer> {
           create: (_) => ContentBlock()..init(widget.database.contentDAO, 1),
           dispose: (_, block) => block.dispose(),
         ),
+        Provider<HealthMealDAO>(create: (_) => widget.database.healthMealDAO),
 
         // WidgetSettingsBlock
         Provider<WidgetSettingsBlock>(

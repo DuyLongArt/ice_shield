@@ -329,7 +329,7 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    await _authBlock.login(email, password);
+    await _authBlock.login(email, password, context);
   }
 
   Future<void> _handlePasskeyLogin() async {
@@ -337,7 +337,7 @@ class _LoginPageState extends State<LoginPage> {
     // Keeping it separate for now or refactoring as an action.
     try {
       // For now, using the local service logic or moving it to AuthBlock later
-      await _authBlock.checkSession();
+      await _authBlock.checkSession(context);
       // Note: Full passkey flow should be in AuthBlock too for consistency
     } catch (e) {
       if (mounted) {

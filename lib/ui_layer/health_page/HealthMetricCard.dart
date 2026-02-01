@@ -34,80 +34,96 @@ class HealthMetricCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 2.0,
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(color: colorScheme.outline, width: 1),
+      ),
       child: InkWell(
         onTap: () => _navigateToDetailPage(context),
-        borderRadius: BorderRadius.circular(20.0),
+        borderRadius: BorderRadius.circular(12.0),
         child: Container(
-          padding: EdgeInsets.all(compact ? 16.0 : 20.0),
+          padding: const EdgeInsets.all(12.0),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20.0),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                metric.color.withOpacity(0.1),
-                metric.color.withOpacity(0.05),
-              ],
-            ),
+            borderRadius: BorderRadius.circular(12.0),
+            // Optional: Keep a very subtle gradient or remove it for purer flat style
+            // gradient: LinearGradient(
+            //   begin: Alignment.topLeft,
+            //   end: Alignment.bottomRight,
+            //   colors: [
+            //     metric.color.withOpacity(0.05),
+            //     metric.color.withOpacity(0.02),
+            //   ],
+            // ),
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: metric.color.withOpacity(0.2),
+                      color: metric.color.withOpacity(0.1), // Flatter look
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       metric.icon,
                       color: metric.color,
-                      size: compact ? 24 : 28,
+                      size: compact ? 20 : 24,
                     ),
                   ),
                   if (metric.trend != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: (metric.trendPositive ?? true)
-                            ? Colors.green.withOpacity(0.2)
-                            : Colors.red.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            (metric.trendPositive ?? true)
-                                ? Icons.trending_up
-                                : Icons.trending_down,
-                            size: 14,
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          color: (metric.trendPositive ?? true)
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
                             color: (metric.trendPositive ?? true)
-                                ? Colors.green
-                                : Colors.red,
+                                ? Colors.green.withOpacity(0.5)
+                                : Colors.red.withOpacity(0.5),
+                            width: 1,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            metric.trend!,
-                            style: textTheme.bodySmall?.copyWith(
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              (metric.trendPositive ?? true)
+                                  ? Icons.trending_up
+                                  : Icons.trending_down,
+                              size: 12,
                               color: (metric.trendPositive ?? true)
                                   ? Colors.green
                                   : Colors.red,
-                              fontWeight: FontWeight.bold,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                metric.trend!,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: (metric.trendPositive ?? true)
+                                      ? Colors.green
+                                      : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                 ],
@@ -115,12 +131,14 @@ class HealthMetricCard extends StatelessWidget {
               const Spacer(),
               Text(
                 metric.name,
-                style: textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.7),
+                style: textTheme.titleSmall?.copyWith(
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
@@ -128,7 +146,7 @@ class HealthMetricCard extends StatelessWidget {
                   Expanded(
                     child: AutoSizeText(
                       metric.value,
-                      style: textTheme.headlineMedium?.copyWith(
+                      style: textTheme.headlineSmall?.copyWith(
                         color: metric.color,
                         fontWeight: FontWeight.bold,
                       ),
@@ -139,8 +157,9 @@ class HealthMetricCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   AutoSizeText(
                     metric.unit,
-                    style: textTheme.bodyMedium?.copyWith(
+                    style: textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: 10,
                     ),
                     maxLines: 1,
                     minFontSize: 8,
@@ -148,24 +167,25 @@ class HealthMetricCard extends StatelessWidget {
                 ],
               ),
               if (metric.subtitle != null) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   metric.subtitle!,
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurface.withOpacity(0.5),
+                    fontSize: 10,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
               if (metric.progress != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
                     value: metric.progress!.clamp(0.0, 1.0),
-                    minHeight: 6,
-                    backgroundColor: metric.color.withOpacity(0.2),
+                    minHeight: 4,
+                    backgroundColor: metric.color.withOpacity(0.1),
                     valueColor: AlwaysStoppedAnimation<Color>(metric.color),
                   ),
                 ),

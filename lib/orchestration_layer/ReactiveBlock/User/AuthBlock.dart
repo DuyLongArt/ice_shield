@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ice_shield/initial_layer/Services/CustomAuthService.dart';
 import 'package:ice_shield/data_layer/Protocol/User/RegistrationProtocol.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
@@ -36,7 +38,7 @@ class AuthBlock {
 
   /// Step 1: Check for existing session (e.g. from cookies/local storage)
   /// In this Flutter app, we'll simulate cookie check or just go to auto-auth
-  Future<void> checkSession() async {
+  Future<void> checkSession(BuildContext context) async {
     status.value = AuthStatus.checkingSession;
     print("🔍 Step 1: Checking for existing session in database...");
 
@@ -93,7 +95,7 @@ class AuthBlock {
 
   /// Step 5: Authenticate with user credentials
   /// Corresponds to authenticating in XState
-  Future<void> login(String ident, String password) async {
+  Future<void> login(String ident, String password, BuildContext context) async {
     status.value = AuthStatus.authenticating;
     error.value = null;
     print("🔐 Authenticating with user credentials: $ident");
@@ -166,6 +168,7 @@ class AuthBlock {
     print("👋 Logging out...");
     final currentToken = jwt.value;
 
+    // context.go("/login");
     // 1. Clear Local State
     jwt.value = null;
     username.value = null;
@@ -187,7 +190,7 @@ class AuthBlock {
   }
 
   /// Passkey Login Flow
-  Future<void> loginWithPasskey() async {
+  Future<void> loginWithPasskey(BuildContext context) async {
     status.value = AuthStatus.authenticating;
     error.value = null;
     print("🔑 Authenticating with Passkey...");

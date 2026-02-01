@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+// import 'package:http/http.dart' as context;
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/DomainData/Plugin/GPSTracker/PersonProfile.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
+import 'package:ice_shield/ui_layer/health_page/subpage/FoodDashboardPage.dart';
+import 'package:provider/provider.dart' show ReadContext;
 
 /// Protocol for managing health metrics data
 abstract class HealthMetricsProtocol {
@@ -214,17 +218,42 @@ class HealthMetricsData {
         trendPositive: true,
       ),
       const HealthMetric(
-        id: 'weight',
-        name: 'Weight',
-        value: '72.5',
-        icon: Icons.monitor_weight,
+        id: 'food',
+        name: 'Food',
+        value: '0',
+        icon: Icons.fastfood,
         color: Color(0xFF9C27B0),
         unit: 'kg',
-        subtitle: 'Target: 70 kg',
-        trend: '-0.5kg',
-        trendPositive: true,
+        subtitle: 'Health first',
+        trend: '0kg',
+        trendPositive: null,
+        detailPage: const FoodDashboardPage(),
       ),
     ];
+  }
+
+  static List<HealthMetric> getMetricsByDay(
+    DateTime day,
+    BuildContext context,
+  ) {
+    // final healthFoodDAO=HealthFoodDAO();
+    final healthFoodDAO = context.read<HealthMealDAO>();
+    final HealthMetric healthMetric=HealthMetric(
+      id: 'food',
+      name: 'Food',
+      value: '0',
+      icon: Icons.fastfood,
+      color: Color(0xFF9C27B0),
+      unit: 'kg',
+      subtitle: 'Health first',
+      trend: '0kg',
+      trendPositive: null,
+      detailPage: const FoodDashboardPage(),
+    );
+
+    final healthMetricByDay=healthFoodDAO.getHealthMetricByDay(day);
+
+    return getDefaultMetrics();
   }
 
   /// Get daily summary statistics
