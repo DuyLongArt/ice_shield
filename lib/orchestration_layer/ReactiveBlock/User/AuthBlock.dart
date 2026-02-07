@@ -45,18 +45,18 @@ class AuthBlock {
     try {
       final session = await _sessionDao.getSession();
       if (session != null) {
-        print(
-          "✅ Session found for ${session.username}. Token length: ${session.jwt.length}",
-        );
+        // print(
+        //   "✅ Session found for ${session.username}. Token length: ${session.jwt.length}",
+        // );
         jwt.value = session.jwt;
         username.value = session.username;
         // Mark as authenticated immediately so UI can update/redirect
         status.value = AuthStatus.authenticated;
-        print("🔄 Fetching user details for ${session.username}...");
+        // print("🔄 Fetching user details for ${session.username}...");
 
         // Optionally verify token or fetch user details immediately
         await fetchUser();
-        print("✅ User details fetch attempt completed.");
+        // print("✅ User details fetch attempt completed.");
       } else {
         print(
           "➡️ No session found in local DB, proceeding to auto-authentication fetch",
@@ -132,7 +132,7 @@ class AuthBlock {
   Future<void> register(RegistrationPayload payload) async {
     status.value = AuthStatus.registering;
     error.value = null;
-    print("📝 Registering user: ${payload.userName}");
+    // print("📝 Registering user: ${payload.userName}");
 
     try {
       // Machine uses POST /backend/auth/signup
@@ -198,7 +198,7 @@ class AuthBlock {
     try {
       // 1. Get Challenge
       final challenge = await _authService.getPasskeyChallenge();
-      print("🔑 Challenge received: $challenge");
+      // print("🔑 Challenge received: $challenge");
 
       // 2. Perform Passkey Assertion (Platform specific logic would go here)
       // For now, we are simulating or passing the challenge back if testing
@@ -245,12 +245,12 @@ class AuthBlock {
     final token = jwt.value;
     if (token == null) return;
 
-    print("👤 Fetching user profile...");
+    // print("👤 Fetching user profile...");
     final userData = await _authService.fetchCurrentUser(token);
-    print("✅ User data fetched: $userData");
+    // print("✅ User data fetched: $userData");
     try {
       final userData = await _authService.fetchCurrentUser(token);
-      print("✅ User data fetched: $userData");
+      // print("✅ User data fetched: $userData");
       user.value = userData;
       // You could update other signals here if needed (e.g. email, role)
       if (userData['userName'] != null) {

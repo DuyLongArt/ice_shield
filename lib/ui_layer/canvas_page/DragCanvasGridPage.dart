@@ -99,6 +99,8 @@ class _DragCanvasState extends State<DragCanvas> {
     // Chạy sau khi build xong để tránh SignalEffectException
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<WidgetManagerBlock>().loadFromDatabase();
+      print("======================");
+      print(context.read<WidgetManagerBlock>().widgets);
     });
   }
 

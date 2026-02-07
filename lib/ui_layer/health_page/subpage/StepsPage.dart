@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pedometer/pedometer.dart';
 
 class StepsPage extends StatefulWidget {
   const StepsPage({super.key});
@@ -8,14 +9,56 @@ class StepsPage extends StatefulWidget {
 }
 
 class _StepsPageState extends State<StepsPage> {
-  int currentSteps = 8500;
+  int currentSteps = 0;
   final int dailyGoal = 10000;
   final TextEditingController _stepsController = TextEditingController();
+
+  late Stream<StepCount> _stepCountStream;
+  late Stream<PedestrianStatus> _pedestrianStatusStream;
+
+  void initPlatformState() {
+    // Listen to step counts
+    _stepCountStream = Pedometer.stepCountStream;
+    _stepCountStream.listen(onStepCount).onError(onStepCountError);
+
+    // Listen to status (walking, stopped, etc.)
+    _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
+    _pedestrianStatusStream
+        .listen(onPedestrianStatusUpdate)
+        .onError(onPedestrianStatusError);
+  }
 
   @override
   void dispose() {
     _stepsController.dispose();
     super.dispose();
+  }
+
+  // 1. Handles the actual step count data
+  void onStepCount(StepCount event) {
+    print(event);
+    setState(() {
+      currentSteps = event.steps;
+    });
+  }
+
+  // 2. Handles the status (walking, stopped, etc.)
+  void onPedestrianStatusUpdate(PedestrianStatus event) {
+    print(event);
+    setState(() {
+      // You can create a String variable 'status' to display this in the UI
+      // String status = event.status;
+      print("status step: ${event.status}");
+    });
+  }
+
+  // 3. Error handling is required by the Pedometer plugin
+  void onPedestrianStatusError(error) {
+    print('Pedestrian Status Error: $error');
+  }
+
+  void onStepCountError(error) {
+    print('Step Count Error: $error');
   }
 
   double get progressPercentage =>
@@ -39,6 +82,12 @@ class _StepsPageState extends State<StepsPage> {
     setState(() {
       currentSteps = 0;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPlatformState(); // 👈 This must be here!
   }
 
   @override
@@ -181,64 +230,12 @@ class _StepsPageState extends State<StepsPage> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Add Steps Manually',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _stepsController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: 'Number of steps',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              prefixIcon: const Icon(Icons.directions_walk),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: _addSteps,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: colorScheme.onPrimary,
-                            padding: const EdgeInsets.all(16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Icon(Icons.add),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start),
               ),
             ),
             const SizedBox(height: 16),
 
             // Reset Button
-            OutlinedButton.icon(
-              onPressed: _resetSteps,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reset Today\'s Steps'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
           ],
         ),
       ),

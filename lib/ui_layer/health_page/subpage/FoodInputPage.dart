@@ -53,7 +53,7 @@ class FoodInputPage extends StatefulWidget {
           backgroundColor: Colors.cyan,
           onPressed: () {
             context.go('/health/water');
-            print("Water button clicked");
+            // print("Water button clicked");
           },
         ),
       ],
@@ -127,7 +127,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
   }
 
   Future<void> _analyzeFood() async {
-    if (_pickedImage == null && _foodController.text.isEmpty) return;
+    if (_pickedImage == null) return;
 
     setState(() => _isAnalyzing = true);
 
@@ -157,9 +157,13 @@ class _FoodInputPageState extends State<FoodInputPage> {
   }
 
   Future<void> _addMeal() async {
-    if (_foodController.text.isNotEmpty &&
-        _caloriesController.text.isNotEmpty) {
+    if (_caloriesController.text.isNotEmpty) {
+      // print(_caloriesController.text);
+      if (_foodController.text.isEmpty) {
+        _foodController.text = _timeInDay(DateTime.now())['label']!;
+      }
       final energy = _caloriesController.text.split("|");
+
       final carbs = double.tryParse(energy[0]) ?? 0.0;
       final protein = double.tryParse(energy[1]) ?? 0.0;
       final fat = double.tryParse(energy[2]) ?? 0.0;
@@ -253,12 +257,13 @@ class _FoodInputPageState extends State<FoodInputPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    AutoSizeText(
-                      'Today\'s Intake',
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      AutoSizeText(
+                        'Today\'s Intake',
                       style: textTheme.titleSmall,
                       maxLines: 1,
                     ),
@@ -279,7 +284,8 @@ class _FoodInputPageState extends State<FoodInputPage> {
                   ],
                 ),
               ),
-            ),
+            )),
+            
             const SizedBox(height: 24),
             AutoSizeText(
               'Recent Meals',
@@ -422,6 +428,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                                 _pickImage(ImageSource.camera).then((_) {
                                   setDialogState(() {});
                                 });
+                                _showAddMealDialog(context);
                                 Navigator.pop(context);
                               },
                             ),

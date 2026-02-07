@@ -61,7 +61,7 @@ class _ExternalDragWidgetState extends State<ExternalDragWidget> {
 
             // TODO: You can use 'dao' here to update the position in DB
           } else if (incomingData is InternalWidgetDragProtocol) {
-            print("Widget from outside");
+            // print("Widget from outside");
 
             // Add to MobX Store
             widget.store.addWidget(widget.index, incomingData);

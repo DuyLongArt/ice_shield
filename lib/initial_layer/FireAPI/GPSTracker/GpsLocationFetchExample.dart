@@ -40,13 +40,13 @@ Future<void> example1BasicSetup() async {
   // Get the API instance
   final api = apiClient.api;
 
-  print('API client created successfully');
-  print('Base URL: https://api.example.com');
+  // print('API client created successfully');
+  // print('Base URL: https://api.example.com');
 }
 
 /// Example 2: Fetch current location
 Future<void> example2FetchCurrentLocation() async {
-  print('\n=== Example 2: Fetch Current Location ===');
+  // print('\n=== Example 2: Fetch Current Location ===');
 
   try {
     final apiClient = GpsLocationApiClient(baseUrl: 'https://api.example.com');
@@ -54,20 +54,12 @@ Future<void> example2FetchCurrentLocation() async {
     // Fetch current location
     final location = await apiClient.api.getCurrentLocation();
 
-    print('Current Location:');
-    print('  Latitude: ${location.formattedLatitude}');
-    print('  Longitude: ${location.formattedLongitude}');
-    print('  Altitude: ${location.formattedAltitude}');
-    print('  Speed: ${location.formattedSpeed}');
-    print(
-      '  Heading: ${location.formattedHeading} (${location.cardinalDirection})',
-    );
-    print('  Timestamp: ${location.timestamp}');
+    p
   } on DioException catch (e) {
     print('Error fetching location: ${e.message}');
     if (e.response != null) {
       print('Status code: ${e.response?.statusCode}');
-      print('Response data: ${e.response?.data}');
+    
     }
   }
 }
@@ -197,9 +189,7 @@ Future<void> example6WithAuthentication() async {
 class ErrorHandlingInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    print('Custom Error Handler:');
-    print('  Type: ${err.type}');
-    print('  Message: ${err.message}');
+   
 
     if (err.response != null) {
       switch (err.response?.statusCode) {

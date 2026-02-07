@@ -44,7 +44,7 @@ class _adapterState extends State<Adapter> {
       await dao.insertInternalWidget(
         name: "WidgetPage",
         imageUrl: "",
-        url: "url",
+        url: "/canvas",
         // widgetID: 1
         alias: "WidgetPage",
       );
@@ -52,12 +52,12 @@ class _adapterState extends State<Adapter> {
       await dao.insertInternalWidget(
         name: "Health Department",
         imageUrl: "",
-        url: "url",
+        url: "/health",
         alias: "HealthPage",
         // widgetID: 1
       );
 
-      print("Default internal widgets inserted successfully.");
+      // print("Default internal widgets inserted successfully.");
     } else {
       print("Default internal widgets already exist. Skipping insertion.");
     }

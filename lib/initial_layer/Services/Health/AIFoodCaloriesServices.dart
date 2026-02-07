@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:ice_shield/data_layer/Protocol/Health/CaloriesProtocol.dart';
 
 class Aifoodcaloriesservices {
-  final String _baseUrl = "http://192.168.2.5:8123/runs/stream";
+  final String _baseUrl = "https://lang.duylong.art/runs/stream";
 
   Future<CaloriesProtocol> getCalories(String foodName, {File? image}) async {
     try {
@@ -63,10 +63,12 @@ class Aifoodcaloriesservices {
 
           // Find the last message with content (the AI's JSON string)
           final aiMessage = messages.lastWhere(
-            (m) => m['type'] == 'ai' && m['content'].toString().isNotEmpty,
+            (m) =>
+                (m['type'] == 'ai' || m['type'] == 'tool') &&
+                m['content'].toString().isNotEmpty,
             orElse: () => null,
           );
-
+          // print(aiMessage);
           if (aiMessage != null) {
             // The content itself is a JSON string: "{"fat": 20, ...}"
             final Map<String, dynamic> calorieData = jsonDecode(

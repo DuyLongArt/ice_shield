@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SettingWidget.dart';
+import 'package:ice_shield/ui_layer/health_page/subpage/FoodDashboardPage.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/FoodInputPage.dart';
 import 'package:ice_shield/ui_layer/home_page/HomePage.dart';
 import 'package:ice_shield/ui_layer/canvas_page/DragCanvasGridPage.dart';
@@ -25,7 +26,7 @@ class MainShell extends StatelessWidget {
 
     final double responsiveSize = (width * 0.18).clamp(56.0, 70.0);
 
-    print("Current route: $route");
+    // print("Current route: $route");
     // Determine which page's icon to show based on the route
     Widget pageIcon;
     switch (route) {
@@ -53,9 +54,13 @@ class MainShell extends StatelessWidget {
       case '/health/water':
         pageIcon = HealthPage.icon(context, size: responsiveSize);
         break;
+      case '/health/food/dashboard':
+        pageIcon = FoodDashboardPage.icon(context, size: responsiveSize);
+        break;
       case '/finance':
         pageIcon = FinancePage.icon(context, size: responsiveSize);
         break;
+
       case '/social':
         pageIcon = SocialPage.icon(context, size: responsiveSize);
         break;

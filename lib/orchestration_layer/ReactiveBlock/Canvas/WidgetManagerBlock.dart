@@ -17,7 +17,7 @@ class WidgetManagerBlock {
     required ReadonlySignal<int?> personIdSignal,
   }) : _widgetDao = widgetDao,
        _personIdSignal = personIdSignal {
-    print("widgets: ${widgets.value}");
+    // print("widgets: ${widgets.value}");
     if (widgets.value.isEmpty) {
       _initializeGrid();
     }
@@ -140,6 +140,8 @@ class WidgetManagerBlock {
 
   void addWidget(int index, InternalWidgetDragProtocol outSideWidget) {
     widgets[index] = outSideWidget;
+    print("widgets: ${widgets.value}");
+    print("Added widget: ${outSideWidget.alias}");
     _persistToDatabase();
   }
 

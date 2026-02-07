@@ -54,30 +54,28 @@ class _LoginPageState extends State<LoginPage> {
       // Show welcome snackbar on success
       if (status == AuthStatus.authenticated &&
           _authBlock.username.value != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.white),
-                    const SizedBox(width: 12),
-                    Text('Welcome, ${_authBlock.username.value}!'),
-                  ],
-                ),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.deepPurpleAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                margin: const EdgeInsets.all(
-                  16,
-                ), // Adds space from screen edges
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          }
-        });
+        // WidgetsBinding.instance.addPostFrameCallback((_) {
+        // if (mounted) {
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //     SnackBar(
+        //       content: Row(
+        //         children: [
+        //           const Icon(Icons.check_circle, color: Colors.white),
+        //           const SizedBox(width: 12),
+        //           Text('Welcome, ${_authBlock.username.value}!'),
+        //         ],
+        //       ),
+        //       behavior: SnackBarBehavior.floating,
+        //       backgroundColor: Colors.deepPurpleAccent,
+        //       shape: RoundedRectangleBorder(
+        //         borderRadius: BorderRadius.circular(12),
+        //       ),
+        //       margin: const EdgeInsets.all(16), // Adds space from screen edges
+        //       duration: const Duration(seconds: 3),
+        //     ),
+        //   );
+        // }
+        // });
       }
 
       return Scaffold(

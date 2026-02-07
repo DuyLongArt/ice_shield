@@ -3,7 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 // Standard Dart naming convention uses snake_case for file names
 part 'CaloriesProtocol.freezed.dart';
 
-
 @freezed
 abstract class CaloriesProtocol with _$CaloriesProtocol {
   const factory CaloriesProtocol({
@@ -24,7 +23,7 @@ abstract class CaloriesProtocol with _$CaloriesProtocol {
     final fat = (json['fat'] as num? ?? 0).toInt();
     final carbs = (json['carbs'] as num? ?? 0).toInt();
     final protein = (json['protein'] as num? ?? 0).toInt();
-    final calories = fat + carbs + protein;
+    final calories = (json['calories'] as num? ?? 0).toInt();
     return CaloriesProtocol(
       // Using 'as num?' handles both int and double, then ?? 0 catches the Null
       fat: fat,

@@ -4,6 +4,9 @@ import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/DomainData/Plugin/GPSTracker/PersonProfile.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/FoodDashboardPage.dart';
+import 'package:ice_shield/ui_layer/health_page/subpage/HeartRatePage.dart';
+import 'package:ice_shield/ui_layer/health_page/subpage/SleepPage.dart';
+import 'package:ice_shield/ui_layer/health_page/subpage/StepsPage.dart';
 import 'package:provider/provider.dart' show ReadContext;
 
 /// Protocol for managing health metrics data
@@ -169,6 +172,7 @@ class HealthMetricsData {
         subtitle: 'Goal: 10,000',
         trend: '+12%',
         trendPositive: true,
+        detailPage: '/health/steps',
       ),
       const HealthMetric(
         id: 'heart_rate',
@@ -180,6 +184,7 @@ class HealthMetricsData {
         subtitle: 'Resting',
         trend: '-3%',
         trendPositive: true,
+        detailPage: '/health/heart_rate',
       ),
       const HealthMetric(
         id: 'sleep',
@@ -192,6 +197,7 @@ class HealthMetricsData {
         subtitle: 'Goal: 8 hours',
         trend: '+0.5h',
         trendPositive: true,
+        detailPage: '/health/sleep',
       ),
       const HealthMetric(
         id: 'water',
@@ -216,6 +222,7 @@ class HealthMetricsData {
         subtitle: 'Goal: 60 min',
         trend: '+15min',
         trendPositive: true,
+        detailPage: '/health/steps',
       ),
       const HealthMetric(
         id: 'food',
@@ -227,33 +234,55 @@ class HealthMetricsData {
         subtitle: 'Health first',
         trend: '0kg',
         trendPositive: null,
-        detailPage: const FoodDashboardPage(),
+        detailPage: '/health/food/dashboard',
       ),
     ];
   }
 
-  static List<HealthMetric> getMetricsByDay(
+  static Future<Map<String, HealthMetric>> getMetricsByDay(
     DateTime day,
     BuildContext context,
-  ) {
-    // final healthFoodDAO=HealthFoodDAO();
+  ) async {
+    // 1. Get the DAO from the context
     final healthFoodDAO = context.read<HealthMealDAO>();
-    final HealthMetric healthMetric=HealthMetric(
-      id: 'food',
-      name: 'Food',
-      value: '0',
-      icon: Icons.fastfood,
-      color: Color(0xFF9C27B0),
-      unit: 'kg',
-      subtitle: 'Health first',
-      trend: '0kg',
-      trendPositive: null,
-      detailPage: const FoodDashboardPage(),
-    );
 
-    final healthMetricByDay=healthFoodDAO.getHealthMetricByDay(day);
+    // 2. Fetch data from the database
+    final healthMetricByDay = await healthFoodDAO.getHealthMetricByDay(day);
+    final calories = await healthFoodDAO.getCaloriesByDate(day);
+    // 3. Handle the "Empty State" (Important!)
+    // If the list is empty, use 0 or a placeholder value
+    final String caloriesValue = healthMetricByDay.isNotEmpty
+        ? healthMetricByDay[0].meal.calories.toString()
+        : '0';
 
-    return getDefaultMetrics();
+    // 4. Create and return the object directly
+    // No need to declare a Future variable here; the 'async' keyword handles it.
+    return {
+      'food': HealthMetric(
+        id: 'food',
+        name: 'Food',
+        value: calories.toString(),
+        icon: Icons.fastfood,
+        color: const Color.fromARGB(255, 95, 202, 19),
+        unit: 'kcal', // Changed from 'kg' to 'kcal' since it's food!
+        subtitle: 'Health first',
+        trend: '0kcal',
+        trendPositive: null,
+        detailPage: '/health/food/dashboard',
+      ),
+      'steps': HealthMetric(
+        id: 'steps',
+        name: 'Steps',
+        value: caloriesValue,
+        icon: Icons.run_circle,
+        color: const Color(0xFF9C27B0),
+        unit: 'kcal', // Changed from 'kg' to 'kcal' since it's food!
+        subtitle: '100 meters define my line',
+        trend: '0kcal',
+        trendPositive: null,
+        detailPage: '/health/steps',
+      ),
+    };
   }
 
   /// Get daily summary statistics

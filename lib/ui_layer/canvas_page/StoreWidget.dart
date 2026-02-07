@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -160,8 +161,11 @@ class StoreWidget extends StatelessWidget {
               final item = combinedList[index - 1]; // Adjust index
 
               return Container(
-                padding: const EdgeInsets.only(top: 35, bottom: 10),
-                width: MediaQuery.sizeOf(context).height * 0.09,
+                padding: EdgeInsets.only(
+                  top: MediaQuery.sizeOf(context).height * 0.03,
+                  bottom: 10,
+                ),
+                width: MediaQuery.sizeOf(context).height * 0.08,
                 child: Draggable<InternalWidgetDragProtocol>(
                   // Logic: IDGen in the Grid will handle creating a unique ID upon drop
                   data: item,
@@ -173,8 +177,8 @@ class StoreWidget extends StatelessWidget {
                       child: BuildCard(
                         item: item,
                         isDragging: true,
-                        cardWidth: MediaQuery.sizeOf(context).height * 0.09,
-                        cardHeight: MediaQuery.sizeOf(context).height * 0.09,
+                        cardWidth: MediaQuery.sizeOf(context).height * 0.08,
+                        cardHeight: MediaQuery.sizeOf(context).height * 0.08,
                       ),
                     ),
                   ),
@@ -228,7 +232,7 @@ class BuildCard extends StatelessWidget {
   }
 
   // 2. Image/Favicon Logic for External Items
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     // If it's an external item (marked by alias or url presence)
 
     return SizedBox(
@@ -267,18 +271,21 @@ class BuildCard extends StatelessWidget {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              item.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-                shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+
+            child: (MediaQuery.sizeOf(context).height < 400)
+                ? AutoSizeText(
+                    item.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : (Container()),
           ),
         ],
       ),
@@ -329,11 +336,11 @@ class BuildCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (item.url.isNotEmpty) {
-            print("Navigating to: ${item.url}");
-            print("alias: ${item.alias}");
+            // print("Navigating to: ${item.url}");
+            // print("alias: ${item.alias}");
             if (item.alias.contains("plugin")) {
               navigateExternalUrl(context, item.url);
-              print("DuyLongTest: ${item.url}");
+              // print("DuyLongTest: ${item.url}");
             } else {
               urlNavigate(item.url);
             }
@@ -360,7 +367,7 @@ class BuildCard extends StatelessWidget {
               ),
             ],
           ),
-          child: _buildContent(),
+          child: _buildContent(context),
         ),
       ),
     );

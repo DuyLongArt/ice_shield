@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:ice_shield/ui_layer/canvas_page/DragCanvasGridPage.dart';
+import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +13,16 @@ class FoodDashboardPage extends StatefulWidget {
 
   @override
   State<FoodDashboardPage> createState() => _FoodDashboardPageState();
+
+  static Widget icon(BuildContext context, {double? size}) {
+    return MainButton(
+      type: "grid",
+      destination: "/food_input",
+      size: size,
+      icon: Icons.camera,
+      mainFunction: () => {context.go('/health/food')},
+    );
+  }
 }
 
 class _FoodDashboardPageState extends State<FoodDashboardPage> {

@@ -8,7 +8,7 @@ class HealthMetric {
   final IconData icon;
   final Color color;
   final String unit;
-  final Widget? detailPage;
+  final String? detailPage;
   final double? progress; // Progress value from 0.0 to 1.0
   final String? subtitle;
   final String? trend; // e.g., "+5%", "-2%"
@@ -36,7 +36,7 @@ class HealthMetric {
     IconData? icon,
     Color? color,
     String? unit,
-    Widget? detailPage,
+    String? detailPage,
     double? progress,
     String? subtitle,
     String? trend,

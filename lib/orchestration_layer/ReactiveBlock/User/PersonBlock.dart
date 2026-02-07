@@ -185,7 +185,7 @@ class PersonBlock {
   /// Fetch user profile and details together
   Future<void> fetchFromDatabase(String token) async {
     if (token.isEmpty) return;
-    print("🔄 Syncing Person Information...");
+    // print("🔄 Syncing Person Information...");
 
     try {
       // 1. Fetch Person Information
@@ -194,7 +194,7 @@ class PersonBlock {
       // 2. Fetch Details
       // final detailsData = await _authService.fetchInformationDetails(token);
 
-      print("✅ Profile Sync: $personAllData");
+      // print("✅ Profile Sync: $personAllData");
 
       // // Update state
       information.value = UserInformation(
@@ -293,7 +293,7 @@ class PersonBlock {
       final skillList = skillsData.map((s) => SkillType.fromJson(s)).toList();
 
       skills.value = skillList;
-      print("✅ Database Skill Successful: ${skillList.length} skills found.");
+      // print("✅ Database Skill Successful: ${skillList.length} skills found.");
     } catch (e) {
       print("❌ Failed to get user skills: $e");
     }

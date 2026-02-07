@@ -1109,23 +1109,20 @@ class HealthMealDAO extends DatabaseAccessor<AppDatabase>
   }
 
   Future<List<DayWithMeal>> getHealthMetricByDay(DateTime date) {
-    // final startOfDay = DateTime(date.year, date.month, date.day);
-    // final endOfDay = startOfDay.add(const Duration(days: 1));
+    // 1. Chuẩn hóa ngày về 00:00:00
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
 
     final query =
         select(daysTable).join([
-            innerJoin(
-              mealsTable,
-              // Trích xuất phần ngày từ eatenAt để so sánh với dayID
-              mealsTable.eatenAt.date.equalsExp(daysTable.dayID.date),
-            ),
-          ])
-          // So sánh phần ngày của dayID với ngày được truyền vào từ tham số
-          ..where(
-            daysTable.dayID.date.equals(
-              date.toIso8601String().substring(0, 10),
-            ),
-          );
+          innerJoin(
+            mealsTable,
+            // So sánh trực tiếp giá trị thời gian để tận dụng Index
+            mealsTable.eatenAt.isBetweenValues(startOfDay, endOfDay),
+          ),
+        ])..where(
+          daysTable.dayID.equals(startOfDay),
+        ); // Giả sử dayID lưu mốc 00:00:00
 
     return query.get().then((rows) {
       return rows.map((row) {
@@ -1165,19 +1162,19 @@ class DayWithMeal {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-    print("Database directory: ${dbFolder.path}");
-    final file = File(p.join(dbFolder.path, 'db3.sqlite'));
+    // print("Database directory: ${dbFolder.path}");
+    final file = File(p.join(dbFolder.path, 'db4.sqlite'));
 
     try {
       if (await file.exists()) {
-        print("Database file exists at: ${file.path}");
+        // print("Database file exists at: ${file.path}");
       } else {
-        print(
-          "Database file does not exist. It will be created at: ${file.path}",
-        );
+        // print(
+        //   "Database file does not exist. It will be created at: ${file.path}",
+        // );
       }
 
-      print("Finalizing database connection...");
+      // print("Finalizing database connection...");
       // Using NativeDatabase directly instead of inBackground for testing iOS stability
       return NativeDatabase(file, logStatements: true);
     } catch (e) {

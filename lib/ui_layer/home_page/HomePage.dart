@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:ice_shield/data_layer/Protocol/Health/HealthMetricsData.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
+import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/data_layer/Protocol/Home/InternalWidgetProtocol.dart';
 import 'package:provider/provider.dart';
@@ -44,7 +46,8 @@ class _HomePageState extends State<HomePage> {
   late InternalWidgetBlock internalWidgetBlock;
   late AuthBlock authBlock;
   late PersonBlock personBlock;
-
+  late HealthMetricsDAO healthMetricsDAO;
+  late Map<String, HealthMetric> healthMetricsData;
   @override
   void initState() {
     super.initState();
@@ -54,12 +57,21 @@ class _HomePageState extends State<HomePage> {
     authBlock = context.read<AuthBlock>();
     authBlock.fetchUser();
     personBlock = context.read<PersonBlock>();
+    healthMetricsDAO = database.healthMetricsDAO;
     personBlock.fetchFromDatabase(authBlock.jwt.value!);
 
-
-    // SỬ DỤNG MICROTASK: Đảm bảo không gây lỗi SignalEffectException khi khởi tạo
     Future.microtask(() {
       internalWidgetBlock.refreshBlock(database.internalWidgetsDAO);
+      HealthMetricsData.getMetricsByDay(DateTime.now(), context).then((
+        newData,
+      ) {
+        if (mounted) {
+          // Kiểm tra xem widget còn tồn tại không trước khi update
+          setState(() {
+            healthMetricsData = newData;
+          });
+        }
+      });
     });
   }
 
@@ -93,7 +105,8 @@ class _HomePageState extends State<HomePage> {
 
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
+
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -101,7 +114,7 @@ class _HomePageState extends State<HomePage> {
               _buildSectionHeader(context, 'Life Dashboard', '/profile'),
               const SizedBox(height: 8),
               SizedBox(
-                height: 160,
+                height: 150,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -111,7 +124,8 @@ class _HomePageState extends State<HomePage> {
                       'Health',
                       Icons.favorite,
                       Colors.green,
-                      '10,234 steps',
+                      '${healthMetricsData['steps']?.value} steps ' +
+                          '${healthMetricsData['food']?.value} calories',
                       '/health',
                     ),
                     _buildQuickAccessCard(
@@ -157,28 +171,35 @@ class _HomePageState extends State<HomePage> {
               if (widgets.isEmpty)
                 const Center(
                   child: Padding(
-                    padding: EdgeInsets.all(40.0),
+                    padding: EdgeInsets.all(20.0),
                     child: AutoSizeText('No widgets found.', maxLines: 1),
                   ),
                 )
               else
-                GridView.builder(
-                  shrinkWrap: true, // Cho phép Grid co giãn theo nội dung
-                  physics:
-                      const NeverScrollableScrollPhysics(), // Scroll theo SingleChildScrollView
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio:
-                        0.9, // Chỉnh lại tỷ lệ để text không bị đè
-                  ),
-                  itemCount: widgets.length,
-                  itemBuilder: (context, index) =>
-                      _buildGridItem(context, widgets[index]),
-                ),
+                SizedBox(
+  height: 120, // Chiều cao cố định cho hàng Quick Access
+  child: ListView.separated(
+    scrollDirection: Axis.horizontal, // Cuộn ngang
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    itemCount: widgets.length,
+    separatorBuilder: (context, index) => const SizedBox(width: 12), // Khoảng cách giữa các nút
+    itemBuilder: (context, index) {
+      return SizedBox(
+        width: 120, // Độ rộng cố định cho từng nút
+        child: _buildGridItem(context, widgets[index]),
+      );
+    },
+  ),
+),
 
-              const SizedBox(height: 40), // Padding cuối trang
+              const SizedBox(height: 16), // Padding cuối trang
+              AutoSizeText(
+                'Dashboard',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+              ),
             ],
           ),
         );
@@ -217,8 +238,8 @@ class _HomePageState extends State<HomePage> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      width: 150,
-      margin: const EdgeInsets.only(right: 12),
+      width: 160,
+      margin: const EdgeInsets.only(right: 10),
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -229,13 +250,13 @@ class _HomePageState extends State<HomePage> {
           onTap: () => context.go(route),
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   backgroundColor: color.withOpacity(0.1),
-                  child: Icon(icon, color: color, size: 20),
+                  child: Icon(icon, color: color, size: 40),
                 ),
                 const Spacer(),
                 AutoSizeText(
@@ -266,10 +287,10 @@ class _HomePageState extends State<HomePage> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: () => _navigateInternalUrl(widgetData.alias),
+      onTap: () => _navigateInternalUrl(widgetData.url),
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),

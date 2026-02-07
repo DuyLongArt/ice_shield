@@ -57,8 +57,9 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
           if (incomingData is int) {
             // Case A: Dragging from another Grid Cell (Int Index)
             widget.store.handleInteraction(incomingData, widget.index);
+            print("Widget from inside");
           } else if (incomingData is InternalWidgetDragProtocol) {
-            // print("Widget from outside");
+            print("Widget from outside");
             widget.store.addWidget(widget.index, incomingData);
           }
         },

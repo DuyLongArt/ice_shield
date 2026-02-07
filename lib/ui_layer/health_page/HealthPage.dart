@@ -131,12 +131,20 @@ class HealthPage extends StatefulWidget {
 
 class _HealthPageState extends State<HealthPage> {
   late AppDatabase database;
-  List<HealthMetric> _healthMetrics = [];
+  Map<String, HealthMetric> _healthMetrics = {};
   bool _isLoading = false;
+  late bool compact;
 
   @override
   void initState() {
     super.initState();
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   compact = MediaQuery.of(context).size.width < 1000;
+    //   print("======================");
+    //   print(compact);
+    // });
+
     database = context.read<AppDatabase>();
     _loadHealthData();
   }
@@ -147,9 +155,13 @@ class _HealthPageState extends State<HealthPage> {
     // Simulate loading delay for smooth animation
     await Future.delayed(const Duration(milliseconds: 500));
 
+    // final calories = await _healthMealDAO.getCaloriesByDate(DateTime.now());
+    final data = await HealthMetricsData.getMetricsByDay(
+      DateTime.now(),
+      context,
+    );
     setState(() {
-      // _healthMetrics = HealthMetricsData.getDefaultMetrics();
-      _healthMetrics=HealthMetricsData.getMetricsByDay(DateTime.now(),context);
+      _healthMetrics = data;
       _isLoading = false;
     });
   }
@@ -158,7 +170,7 @@ class _HealthPageState extends State<HealthPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final summary = HealthMetricsData.getDailySummary();
-
+    compact = MediaQuery.of(context).size.width < 600;
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: Watch((context) {
@@ -183,35 +195,7 @@ class _HealthPageState extends State<HealthPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0, bottom: 12),
-                        child: Text(
-                          'Nutrition',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                              ),
-                        ),
-                      ),
-                      CaloriesMainDisplay(
-                        netCalories: 1280,
-                        dailyGoal: 2000,
-                        calorieStatus: 'On Track',
-                        statusColor: Colors.green,
-                        progressPercentage: 64.0,
-                      ),
-                      const SizedBox(height: 12),
-                      MacronutrientSummary(
-                        protein: 45,
-                        carbs: 180,
-                        fat: 50,
-                        proteinGoal: 150,
-                        carbsGoal: 250,
-                        fatGoal: 70,
-                      ),
-                    ],
+                    children: [],
                   ),
                 ),
               ),
@@ -251,16 +235,16 @@ class _HealthPageState extends State<HealthPage> {
                   : SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.85,
-                            ),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: compact?16:64,
+                          
+                          mainAxisSpacing: compact?24:48,
+                          childAspectRatio: compact ? 1 : 1.6,
+                        ),
                         delegate: SliverChildBuilderDelegate((context, index) {
                           return HealthMetricCard(
-                            metric: _healthMetrics[index],
+                            metrics: _healthMetrics.values.elementAt(index),
                           );
                         }, childCount: _healthMetrics.length),
                       ),
