@@ -179,13 +179,24 @@ class StoreWidget extends StatelessWidget {
                         isDragging: true,
                         cardWidth: MediaQuery.sizeOf(context).height * 0.08,
                         cardHeight: MediaQuery.sizeOf(context).height * 0.08,
+                        name: item.name,
                       ),
                     ),
                   ),
-                  child: SizedBox(
-                    width: 80,
-                    height: 80,
-                    child: BuildCard(item: item, cardWidth: 80, cardHeight: 80),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: BuildCard(
+                          item: item,
+                          cardWidth: 80,
+                          cardHeight: 80,
+                          name: item.name,
+                        ),
+                      ),
+                      // Text(item.name, style: TextStyle(color: Colors.white, fontSize: 9),)
+                    ],
                   ),
                 ),
               );
@@ -208,10 +219,12 @@ class BuildCard extends StatelessWidget {
     this.isDragging = false,
     required this.cardWidth,
     required this.cardHeight,
+    required this.name,
   });
 
   final double cardWidth;
   final double cardHeight;
+  final String name;
 
   // 1. Icon Logic for Default Items
   IconData _getIcon(String alias) {
@@ -269,6 +282,7 @@ class BuildCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          Text(item.name, style: TextStyle(color: Colors.white, fontSize: 9)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
 

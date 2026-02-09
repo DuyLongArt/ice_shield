@@ -21,10 +21,12 @@ class InternalDragIconWidget extends StatefulWidget {
     required this.store,
     required this.widthCard,
     required this.heightCard,
+    required this.name,
   });
 
   final double widthCard;
   final double heightCard;
+  final String name;
 
   @override
   State<InternalDragIconWidget> createState() => _InternalDragIconWidgetState();
@@ -104,6 +106,7 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
                           isDragging: true,
                           cardWidth: widget.widthCard / 2,
                           cardHeight: widget.heightCard / 2,
+                          name: widget.name,
                         ),
                       ),
                     ),
@@ -121,6 +124,7 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
                           item: cellData,
                           cardWidth: widget.widthCard,
                           cardHeight: widget.heightCard,
+                          name: widget.name,
                         ),
                         Positioned(
                           top: 4,

@@ -1,72 +1,47 @@
 {
-  "theme_name": "NatureGreen_DetailedMaterial",
-  "brightness": "light", 
+  "theme_name": "Emerald Haven",
+  "brightness": "light",
   "useMaterial3": true,
-  
-  "color_palette": {
-    
-    "accentLime": "0xFFC0CA33",           
-    "surfaceWhite": "0xFFF5F5F5",
-    "darkText": "0xFF212121"
-  },
-
+  "seed_color": "0xFF2E7D32",
   "color_scheme": {
-    "primary": "0xFF322E3C",           
-    "onPrimary": "0xFFFFFFFF",         
-    
-    "secondary": "0xFFC0CA33",         
-    "onSecondary": "0xFF000000",       
-    
-    "surface": "0xFFF5F5F5",           
-    "onSurface": "0xFF212121",         
-    
-    "background": "0xFFE8F5E9",        
-    "onBackground": "0xFF212121",      
-    
-    "error": "0xFFD32F2F",             
-    "onError": "0xFFFFFFFF"            
+    "primary": "0xFF2E7D32",
+    "onPrimary": "0xFFFFFFFF",
+    "secondary": "0xFFC0CA33",
+    "onSecondary": "0xFF000000",
+    "surface": "0xFFF1F8E9",
+    "onSurface": "0xFF1B5E20",
+    "background": "0xFFFFFFFF",
+    "onBackground": "0xFF1B5E20"
   },
-  
   "components": {
     "appBar": {
-      "backgroundColor": "0xFF4CAF50",  
-      "foregroundColor": "0xFFFFFFFF",  
-      "elevation": 2.0
+      "backgroundColor": "0xFF2E7D32",
+      "foregroundColor": "0xFFFFFFFF",
+      "elevation": 0.0
     },
-    
     "elevatedButton": {
-      "backgroundColor": "0xFF388E3C", 
-      "foregroundColor": "0xFFFFFFFF", 
-      "borderRadius": 8.0,
-      "elevation": 4.0
-    },
-
-    "floatingActionButton": {
-      "backgroundColor": "0xFFC0CA33", 
-      "foregroundColor": "0xFF000000", 
-      "shape": "circular"
+      "backgroundColor": "0xFF388E3C",
+      "foregroundColor": "0xFFFFFFFF",
+      "borderRadius": 12.0,
+      "elevation": 2.0
     }
   },
-
   "text_theme": {
-    "fontFamily": "Roboto",
-    
+    "fontFamily": "Inter",
     "headlineLarge": {
       "size": 32.0,
       "weight": "bold",
-      "color": "0xFF212121" 
+      "color": "0xFF1B5E20"
     },
-    
     "bodyMedium": {
-      "size": 14.0,
+      "size": 16.0,
       "weight": "normal",
-      "color": "0xFF212121"
+      "color": "0xFF2E342E"
     },
-    
-    "labelLarge": { 
+    "labelLarge": {
       "size": 16.0,
       "weight": "medium",
-      "color": "0xFFFFFFFF" 
+      "color": "0xFFFFFFFF"
     }
   }
 }

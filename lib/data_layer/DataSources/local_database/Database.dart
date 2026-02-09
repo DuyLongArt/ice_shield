@@ -1,6 +1,7 @@
 // 1. Core Drift and Platform Imports
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart'; // For NativeDatabase on mobile/desktop
+import 'package:ice_shield/initial_layer/CurrentThemeData.dart';
 import 'package:ice_shield/orchestration_layer/IDGen.dart';
 import 'package:ice_shield/data_layer/Protocol/Canvas/ExternalWidgetProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/PersonProtocol.dart';
@@ -9,6 +10,7 @@ import 'package:ice_shield/data_layer/Protocol/User/UserAccountProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/EmailAddressProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/ProfileProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/CVAddressProtocol.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreData.dart';
 import 'dart:io'; // For File
 import 'dart:math'; // For Random() used in DAOs
 import 'dart:convert';
@@ -340,6 +342,23 @@ class GoalsTable extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+@DataClassName("ScoreData")
+class ScoresTable extends Table {
+  IntColumn get scoreID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  RealColumn get healthGlobalScore => real().withDefault(const Constant(0.0))();
+  RealColumn get socialGlobalScore => real().withDefault(const Constant(0.0))();
+  RealColumn get financialGlobalScore =>
+      real().withDefault(const Constant(0.0))();
+  RealColumn get careerGlobalScore => real().withDefault(const Constant(0.0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DataClassName('HabitData')
 class HabitsTable extends Table {
   IntColumn get habitID => integer().autoIncrement()();
@@ -459,6 +478,42 @@ class SessionTable extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+@DataClassName('ThemeData')
+class ThemeTable extends Table {
+  IntColumn get themeID => integer().autoIncrement()();
+  TextColumn get themeName => text()();
+  TextColumn get themePath => text()();
+}
+
+@DriftAccessor(tables: [ThemeTable])
+class ThemeDAO extends DatabaseAccessor<AppDatabase> with _$ThemeDAOMixin {
+  ThemeDAO(super.db);
+
+  Future<int> saveCurrentTheme(CurrentThemeData theme) async {
+    return (update(themeTable)
+          ..where((t) => t.themeName.equals("CurrentTheme")))
+        .write(ThemeTableCompanion(themePath: Value(theme.themePath)));
+  }
+
+  Future<ThemeData?> getCurrentTheme() async {
+    return (select(
+      themeTable,
+    )..where((t) => t.themeName.equals("CurrentTheme"))).getSingleOrNull();
+  }
+
+  Future<int> insertTheme({
+    required String themeName,
+    required String themePath,
+  }) async {
+    return into(themeTable).insert(
+      ThemeTableCompanion(
+        themeName: Value(themeName),
+        themePath: Value(themePath),
+      ),
+    );
+  }
+}
+
 // --- 4. DAO Definitions ---
 @DriftAccessor(tables: [PersonsTable])
 class PersonDAO extends DatabaseAccessor<AppDatabase> with _$PersonDAOMixin {
@@ -469,6 +524,27 @@ class PersonDAO extends DatabaseAccessor<AppDatabase> with _$PersonDAOMixin {
     final query = select(personsTable)..where((t) => t.personID.equals(id));
 
     return query.getSingleOrNull();
+  }
+}
+
+@DriftAccessor(tables: [ScoresTable])
+class ScoreDAO extends DatabaseAccessor<AppDatabase> with _$ScoreDAOMixin {
+  ScoreDAO(super.db);
+
+  Future<int> insertOrUpdateScore(ScoreData score) {
+    return into(scoresTable).insertOnConflictUpdate(score);
+  }
+
+  Future<ScoreData?> getScoreByPersonID(int personID) {
+    return (select(
+      scoresTable,
+    )..where((tbl) => tbl.personID.equals(personID))).getSingleOrNull();
+  }
+
+  Stream<ScoreData?> watchScoreByPersonID(int personID) {
+    return (select(
+      scoresTable,
+    )..where((tbl) => tbl.personID.equals(personID))).watchSingleOrNull();
   }
 }
 
@@ -1163,7 +1239,7 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     // print("Database directory: ${dbFolder.path}");
-    final file = File(p.join(dbFolder.path, 'db4.sqlite'));
+    final file = File(p.join(dbFolder.path, 'db9.sqlite'));
 
     try {
       if (await file.exists()) {
@@ -1208,6 +1284,8 @@ LazyDatabase _openConnection() {
     HealthMetricsTable,
     MealsTable,
     DaysTable,
+    ScoresTable,
+    ThemeTable,
   ],
   daos: [
     ThemesTableDAO,
@@ -1224,6 +1302,8 @@ LazyDatabase _openConnection() {
     SessionDAO,
     HealthMetricsDAO,
     HealthMealDAO,
+    ScoreDAO,
+    ThemeDAO,
   ],
 )
 class AppDatabase extends _$AppDatabase {

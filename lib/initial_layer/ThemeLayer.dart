@@ -20,7 +20,7 @@ class ThemeLayer extends StatefulWidget {
   Future<ThemeData> _loadTheme() async {
     // Use the actual path declared in pubspec.yaml
     // Assuming ThemeAdapter.parse is adapted to return a standard ThemeData
-    return await ThemeAdapter.parse("assets/DefaultTheme.json");
+    return await ThemeAdapter.parse("assets/CurrentTheme.json");
   }
 
   @override

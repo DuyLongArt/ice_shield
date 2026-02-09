@@ -91,7 +91,7 @@ class MainShell extends StatelessWidget {
     return Scaffold(
       // --- PERSISTENT APP BAR ---
       appBar: AppBar(
-        title: const Text("ICE Shield"),
+        title: const Text("ICE Shield", style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
         actions: [
           // 1. Navigate to Home

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // NOTE: Please ensure these imports are correct for your project structure
-import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart'
+    hide ThemeData;
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 // import 'package:ice_shield/orchestration_layer/ActionFiles/Home/InternalWidgetProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/Theme/ThemeAdapter.dart';
@@ -36,9 +37,18 @@ class _adapterState extends State<Adapter> {
   void _initAsyncDatabaseLink() async {
     final dao = appDatabase.internalWidgetsDAO;
 
+    final themeDao = appDatabase.themeDAO;
     // Check if default data ("HomePage") already exists.
     final existingWidget = await dao.getInternalWidgetByName("WidgetPage");
 
+    final existingTheme = await themeDao.getCurrentTheme();
+    if (existingTheme == null) {
+      // Insert default data only if it doesn't exist.
+      await themeDao.insertTheme(
+        themeName: "CurrentTheme",
+        themePath: "assets/SeedBlue.json",
+      );
+    }
     if (existingWidget == null) {
       // Insert default data only if it doesn't exist.
       await dao.insertInternalWidget(
@@ -79,7 +89,16 @@ class _adapterState extends State<Adapter> {
 
     // Access themeStore from parent
     themeStore = context.read<ThemeStore>();
+    // if (mounted) {
 
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // This runs after the build method is finished
+      var currentThemeData = await appDatabase.themeDAO.getCurrentTheme();
+      print("Current theme data: ${currentThemeData?.themePath}");
+      themeStore.loadTheme(currentThemeData?.themePath ?? "");
+    });
+
+    // }
     // Initialize AuthBlock with CustomAuthService and SessionDAO
     authBlock = AuthBlock(
       authService: CustomAuthService(baseUrl: 'https://backend.duylong.art'),

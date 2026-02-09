@@ -195,6 +195,7 @@ class _DragCanvasState extends State<DragCanvas> {
                             store: widgetBlock,
                             widthCard: constraints.maxWidth,
                             heightCard: constraints.maxHeight,
+                            name: widgetBlock.widgets[index].name,
                           ),
                           // ),
                         ),

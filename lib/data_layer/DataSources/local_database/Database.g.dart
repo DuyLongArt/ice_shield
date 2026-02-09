@@ -7,8 +7,15 @@ mixin _$InternalWidgetsDAOMixin on DatabaseAccessor<AppDatabase> {
   $InternalWidgetsTableTable get internalWidgetsTable =>
       attachedDatabase.internalWidgetsTable;
 }
+mixin _$ThemeDAOMixin on DatabaseAccessor<AppDatabase> {
+  $ThemeTableTable get themeTable => attachedDatabase.themeTable;
+}
 mixin _$PersonDAOMixin on DatabaseAccessor<AppDatabase> {
   $PersonsTableTable get personsTable => attachedDatabase.personsTable;
+}
+mixin _$ScoreDAOMixin on DatabaseAccessor<AppDatabase> {
+  $PersonsTableTable get personsTable => attachedDatabase.personsTable;
+  $ScoresTableTable get scoresTable => attachedDatabase.scoresTable;
 }
 mixin _$ExternalWidgetsDAOMixin on DatabaseAccessor<AppDatabase> {
   $ExternalWidgetsTableTable get externalWidgetsTable =>
@@ -11240,7 +11247,7 @@ class $MealsTableTable extends MealsTable
   static const VerificationMeta _mealIDMeta = const VerificationMeta('mealID');
   @override
   late final GeneratedColumn<int> mealID = GeneratedColumn<int>(
-    'meal_i_d',
+    'meal_id',
     aliasedName,
     false,
     hasAutoIncrement: true,
@@ -11355,10 +11362,10 @@ class $MealsTableTable extends MealsTable
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('meal_i_d')) {
+    if (data.containsKey('meal_id')) {
       context.handle(
         _mealIDMeta,
-        mealID.isAcceptableOrUnknown(data['meal_i_d']!, _mealIDMeta),
+        mealID.isAcceptableOrUnknown(data['meal_id']!, _mealIDMeta),
       );
     }
     if (data.containsKey('meal_name')) {
@@ -11419,7 +11426,7 @@ class $MealsTableTable extends MealsTable
     return MealData(
       mealID: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}meal_i_d'],
+        data['${effectivePrefix}meal_id'],
       )!,
       mealName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -11480,7 +11487,7 @@ class MealData extends DataClass implements Insertable<MealData> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['meal_i_d'] = Variable<int>(mealID);
+    map['meal_id'] = Variable<int>(mealID);
     map['meal_name'] = Variable<String>(mealName);
     if (!nullToAbsent || mealImageUrl != null) {
       map['meal_image_url'] = Variable<String>(mealImageUrl);
@@ -11653,7 +11660,7 @@ class MealsTableCompanion extends UpdateCompanion<MealData> {
     Expression<DateTime>? eatenAt,
   }) {
     return RawValuesInsertable({
-      if (mealID != null) 'meal_i_d': mealID,
+      if (mealID != null) 'meal_id': mealID,
       if (mealName != null) 'meal_name': mealName,
       if (mealImageUrl != null) 'meal_image_url': mealImageUrl,
       if (fat != null) 'fat': fat,
@@ -11690,7 +11697,7 @@ class MealsTableCompanion extends UpdateCompanion<MealData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (mealID.present) {
-      map['meal_i_d'] = Variable<int>(mealID.value);
+      map['meal_id'] = Variable<int>(mealID.value);
     }
     if (mealName.present) {
       map['meal_name'] = Variable<String>(mealName.value);
@@ -11741,7 +11748,7 @@ class $DaysTableTable extends DaysTable
   static const VerificationMeta _dayIDMeta = const VerificationMeta('dayID');
   @override
   late final GeneratedColumn<DateTime> dayID = GeneratedColumn<DateTime>(
-    'day_i_d',
+    'day_id',
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
@@ -11783,10 +11790,10 @@ class $DaysTableTable extends DaysTable
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('day_i_d')) {
+    if (data.containsKey('day_id')) {
       context.handle(
         _dayIDMeta,
-        dayID.isAcceptableOrUnknown(data['day_i_d']!, _dayIDMeta),
+        dayID.isAcceptableOrUnknown(data['day_id']!, _dayIDMeta),
       );
     } else if (isInserting) {
       context.missing(_dayIDMeta);
@@ -11817,7 +11824,7 @@ class $DaysTableTable extends DaysTable
     return DayData(
       dayID: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
-        data['${effectivePrefix}day_i_d'],
+        data['${effectivePrefix}day_id'],
       )!,
       weight: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -11848,7 +11855,7 @@ class DayData extends DataClass implements Insertable<DayData> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['day_i_d'] = Variable<DateTime>(dayID);
+    map['day_id'] = Variable<DateTime>(dayID);
     map['weight'] = Variable<int>(weight);
     map['calories_out'] = Variable<int>(caloriesOut);
     return map;
@@ -11943,7 +11950,7 @@ class DaysTableCompanion extends UpdateCompanion<DayData> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (dayID != null) 'day_i_d': dayID,
+      if (dayID != null) 'day_id': dayID,
       if (weight != null) 'weight': weight,
       if (caloriesOut != null) 'calories_out': caloriesOut,
       if (rowid != null) 'rowid': rowid,
@@ -11968,7 +11975,7 @@ class DaysTableCompanion extends UpdateCompanion<DayData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (dayID.present) {
-      map['day_i_d'] = Variable<DateTime>(dayID.value);
+      map['day_id'] = Variable<DateTime>(dayID.value);
     }
     if (weight.present) {
       map['weight'] = Variable<int>(weight.value);
@@ -11989,6 +11996,788 @@ class DaysTableCompanion extends UpdateCompanion<DayData> {
           ..write('weight: $weight, ')
           ..write('caloriesOut: $caloriesOut, ')
           ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ScoresTableTable extends ScoresTable
+    with TableInfo<$ScoresTableTable, ScoreData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScoresTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _scoreIDMeta = const VerificationMeta(
+    'scoreID',
+  );
+  @override
+  late final GeneratedColumn<int> scoreID = GeneratedColumn<int>(
+    'score_i_d',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _personIDMeta = const VerificationMeta(
+    'personID',
+  );
+  @override
+  late final GeneratedColumn<int> personID = GeneratedColumn<int>(
+    'person_i_d',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES persons_table (person_i_d) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _healthGlobalScoreMeta = const VerificationMeta(
+    'healthGlobalScore',
+  );
+  @override
+  late final GeneratedColumn<double> healthGlobalScore =
+      GeneratedColumn<double>(
+        'health_global_score',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _socialGlobalScoreMeta = const VerificationMeta(
+    'socialGlobalScore',
+  );
+  @override
+  late final GeneratedColumn<double> socialGlobalScore =
+      GeneratedColumn<double>(
+        'social_global_score',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _financialGlobalScoreMeta =
+      const VerificationMeta('financialGlobalScore');
+  @override
+  late final GeneratedColumn<double> financialGlobalScore =
+      GeneratedColumn<double>(
+        'financial_global_score',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _careerGlobalScoreMeta = const VerificationMeta(
+    'careerGlobalScore',
+  );
+  @override
+  late final GeneratedColumn<double> careerGlobalScore =
+      GeneratedColumn<double>(
+        'career_global_score',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    scoreID,
+    personID,
+    healthGlobalScore,
+    socialGlobalScore,
+    financialGlobalScore,
+    careerGlobalScore,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'scores_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScoreData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('score_i_d')) {
+      context.handle(
+        _scoreIDMeta,
+        scoreID.isAcceptableOrUnknown(data['score_i_d']!, _scoreIDMeta),
+      );
+    }
+    if (data.containsKey('person_i_d')) {
+      context.handle(
+        _personIDMeta,
+        personID.isAcceptableOrUnknown(data['person_i_d']!, _personIDMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIDMeta);
+    }
+    if (data.containsKey('health_global_score')) {
+      context.handle(
+        _healthGlobalScoreMeta,
+        healthGlobalScore.isAcceptableOrUnknown(
+          data['health_global_score']!,
+          _healthGlobalScoreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('social_global_score')) {
+      context.handle(
+        _socialGlobalScoreMeta,
+        socialGlobalScore.isAcceptableOrUnknown(
+          data['social_global_score']!,
+          _socialGlobalScoreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('financial_global_score')) {
+      context.handle(
+        _financialGlobalScoreMeta,
+        financialGlobalScore.isAcceptableOrUnknown(
+          data['financial_global_score']!,
+          _financialGlobalScoreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('career_global_score')) {
+      context.handle(
+        _careerGlobalScoreMeta,
+        careerGlobalScore.isAcceptableOrUnknown(
+          data['career_global_score']!,
+          _careerGlobalScoreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {scoreID};
+  @override
+  ScoreData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScoreData(
+      scoreID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score_i_d'],
+      )!,
+      personID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}person_i_d'],
+      )!,
+      healthGlobalScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}health_global_score'],
+      )!,
+      socialGlobalScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}social_global_score'],
+      )!,
+      financialGlobalScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}financial_global_score'],
+      )!,
+      careerGlobalScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}career_global_score'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ScoresTableTable createAlias(String alias) {
+    return $ScoresTableTable(attachedDatabase, alias);
+  }
+}
+
+class ScoreData extends DataClass implements Insertable<ScoreData> {
+  final int scoreID;
+  final int personID;
+  final double healthGlobalScore;
+  final double socialGlobalScore;
+  final double financialGlobalScore;
+  final double careerGlobalScore;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const ScoreData({
+    required this.scoreID,
+    required this.personID,
+    required this.healthGlobalScore,
+    required this.socialGlobalScore,
+    required this.financialGlobalScore,
+    required this.careerGlobalScore,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['score_i_d'] = Variable<int>(scoreID);
+    map['person_i_d'] = Variable<int>(personID);
+    map['health_global_score'] = Variable<double>(healthGlobalScore);
+    map['social_global_score'] = Variable<double>(socialGlobalScore);
+    map['financial_global_score'] = Variable<double>(financialGlobalScore);
+    map['career_global_score'] = Variable<double>(careerGlobalScore);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ScoresTableCompanion toCompanion(bool nullToAbsent) {
+    return ScoresTableCompanion(
+      scoreID: Value(scoreID),
+      personID: Value(personID),
+      healthGlobalScore: Value(healthGlobalScore),
+      socialGlobalScore: Value(socialGlobalScore),
+      financialGlobalScore: Value(financialGlobalScore),
+      careerGlobalScore: Value(careerGlobalScore),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ScoreData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScoreData(
+      scoreID: serializer.fromJson<int>(json['scoreID']),
+      personID: serializer.fromJson<int>(json['personID']),
+      healthGlobalScore: serializer.fromJson<double>(json['healthGlobalScore']),
+      socialGlobalScore: serializer.fromJson<double>(json['socialGlobalScore']),
+      financialGlobalScore: serializer.fromJson<double>(
+        json['financialGlobalScore'],
+      ),
+      careerGlobalScore: serializer.fromJson<double>(json['careerGlobalScore']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'scoreID': serializer.toJson<int>(scoreID),
+      'personID': serializer.toJson<int>(personID),
+      'healthGlobalScore': serializer.toJson<double>(healthGlobalScore),
+      'socialGlobalScore': serializer.toJson<double>(socialGlobalScore),
+      'financialGlobalScore': serializer.toJson<double>(financialGlobalScore),
+      'careerGlobalScore': serializer.toJson<double>(careerGlobalScore),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ScoreData copyWith({
+    int? scoreID,
+    int? personID,
+    double? healthGlobalScore,
+    double? socialGlobalScore,
+    double? financialGlobalScore,
+    double? careerGlobalScore,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => ScoreData(
+    scoreID: scoreID ?? this.scoreID,
+    personID: personID ?? this.personID,
+    healthGlobalScore: healthGlobalScore ?? this.healthGlobalScore,
+    socialGlobalScore: socialGlobalScore ?? this.socialGlobalScore,
+    financialGlobalScore: financialGlobalScore ?? this.financialGlobalScore,
+    careerGlobalScore: careerGlobalScore ?? this.careerGlobalScore,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ScoreData copyWithCompanion(ScoresTableCompanion data) {
+    return ScoreData(
+      scoreID: data.scoreID.present ? data.scoreID.value : this.scoreID,
+      personID: data.personID.present ? data.personID.value : this.personID,
+      healthGlobalScore: data.healthGlobalScore.present
+          ? data.healthGlobalScore.value
+          : this.healthGlobalScore,
+      socialGlobalScore: data.socialGlobalScore.present
+          ? data.socialGlobalScore.value
+          : this.socialGlobalScore,
+      financialGlobalScore: data.financialGlobalScore.present
+          ? data.financialGlobalScore.value
+          : this.financialGlobalScore,
+      careerGlobalScore: data.careerGlobalScore.present
+          ? data.careerGlobalScore.value
+          : this.careerGlobalScore,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScoreData(')
+          ..write('scoreID: $scoreID, ')
+          ..write('personID: $personID, ')
+          ..write('healthGlobalScore: $healthGlobalScore, ')
+          ..write('socialGlobalScore: $socialGlobalScore, ')
+          ..write('financialGlobalScore: $financialGlobalScore, ')
+          ..write('careerGlobalScore: $careerGlobalScore, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    scoreID,
+    personID,
+    healthGlobalScore,
+    socialGlobalScore,
+    financialGlobalScore,
+    careerGlobalScore,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScoreData &&
+          other.scoreID == this.scoreID &&
+          other.personID == this.personID &&
+          other.healthGlobalScore == this.healthGlobalScore &&
+          other.socialGlobalScore == this.socialGlobalScore &&
+          other.financialGlobalScore == this.financialGlobalScore &&
+          other.careerGlobalScore == this.careerGlobalScore &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ScoresTableCompanion extends UpdateCompanion<ScoreData> {
+  final Value<int> scoreID;
+  final Value<int> personID;
+  final Value<double> healthGlobalScore;
+  final Value<double> socialGlobalScore;
+  final Value<double> financialGlobalScore;
+  final Value<double> careerGlobalScore;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const ScoresTableCompanion({
+    this.scoreID = const Value.absent(),
+    this.personID = const Value.absent(),
+    this.healthGlobalScore = const Value.absent(),
+    this.socialGlobalScore = const Value.absent(),
+    this.financialGlobalScore = const Value.absent(),
+    this.careerGlobalScore = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  ScoresTableCompanion.insert({
+    this.scoreID = const Value.absent(),
+    required int personID,
+    this.healthGlobalScore = const Value.absent(),
+    this.socialGlobalScore = const Value.absent(),
+    this.financialGlobalScore = const Value.absent(),
+    this.careerGlobalScore = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : personID = Value(personID);
+  static Insertable<ScoreData> custom({
+    Expression<int>? scoreID,
+    Expression<int>? personID,
+    Expression<double>? healthGlobalScore,
+    Expression<double>? socialGlobalScore,
+    Expression<double>? financialGlobalScore,
+    Expression<double>? careerGlobalScore,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (scoreID != null) 'score_i_d': scoreID,
+      if (personID != null) 'person_i_d': personID,
+      if (healthGlobalScore != null) 'health_global_score': healthGlobalScore,
+      if (socialGlobalScore != null) 'social_global_score': socialGlobalScore,
+      if (financialGlobalScore != null)
+        'financial_global_score': financialGlobalScore,
+      if (careerGlobalScore != null) 'career_global_score': careerGlobalScore,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  ScoresTableCompanion copyWith({
+    Value<int>? scoreID,
+    Value<int>? personID,
+    Value<double>? healthGlobalScore,
+    Value<double>? socialGlobalScore,
+    Value<double>? financialGlobalScore,
+    Value<double>? careerGlobalScore,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return ScoresTableCompanion(
+      scoreID: scoreID ?? this.scoreID,
+      personID: personID ?? this.personID,
+      healthGlobalScore: healthGlobalScore ?? this.healthGlobalScore,
+      socialGlobalScore: socialGlobalScore ?? this.socialGlobalScore,
+      financialGlobalScore: financialGlobalScore ?? this.financialGlobalScore,
+      careerGlobalScore: careerGlobalScore ?? this.careerGlobalScore,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (scoreID.present) {
+      map['score_i_d'] = Variable<int>(scoreID.value);
+    }
+    if (personID.present) {
+      map['person_i_d'] = Variable<int>(personID.value);
+    }
+    if (healthGlobalScore.present) {
+      map['health_global_score'] = Variable<double>(healthGlobalScore.value);
+    }
+    if (socialGlobalScore.present) {
+      map['social_global_score'] = Variable<double>(socialGlobalScore.value);
+    }
+    if (financialGlobalScore.present) {
+      map['financial_global_score'] = Variable<double>(
+        financialGlobalScore.value,
+      );
+    }
+    if (careerGlobalScore.present) {
+      map['career_global_score'] = Variable<double>(careerGlobalScore.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScoresTableCompanion(')
+          ..write('scoreID: $scoreID, ')
+          ..write('personID: $personID, ')
+          ..write('healthGlobalScore: $healthGlobalScore, ')
+          ..write('socialGlobalScore: $socialGlobalScore, ')
+          ..write('financialGlobalScore: $financialGlobalScore, ')
+          ..write('careerGlobalScore: $careerGlobalScore, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ThemeTableTable extends ThemeTable
+    with TableInfo<$ThemeTableTable, ThemeData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ThemeTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _themeIDMeta = const VerificationMeta(
+    'themeID',
+  );
+  @override
+  late final GeneratedColumn<int> themeID = GeneratedColumn<int>(
+    'theme_i_d',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _themeNameMeta = const VerificationMeta(
+    'themeName',
+  );
+  @override
+  late final GeneratedColumn<String> themeName = GeneratedColumn<String>(
+    'theme_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _themePathMeta = const VerificationMeta(
+    'themePath',
+  );
+  @override
+  late final GeneratedColumn<String> themePath = GeneratedColumn<String>(
+    'theme_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [themeID, themeName, themePath];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'theme_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ThemeData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('theme_i_d')) {
+      context.handle(
+        _themeIDMeta,
+        themeID.isAcceptableOrUnknown(data['theme_i_d']!, _themeIDMeta),
+      );
+    }
+    if (data.containsKey('theme_name')) {
+      context.handle(
+        _themeNameMeta,
+        themeName.isAcceptableOrUnknown(data['theme_name']!, _themeNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_themeNameMeta);
+    }
+    if (data.containsKey('theme_path')) {
+      context.handle(
+        _themePathMeta,
+        themePath.isAcceptableOrUnknown(data['theme_path']!, _themePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_themePathMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {themeID};
+  @override
+  ThemeData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ThemeData(
+      themeID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}theme_i_d'],
+      )!,
+      themeName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}theme_name'],
+      )!,
+      themePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}theme_path'],
+      )!,
+    );
+  }
+
+  @override
+  $ThemeTableTable createAlias(String alias) {
+    return $ThemeTableTable(attachedDatabase, alias);
+  }
+}
+
+class ThemeData extends DataClass implements Insertable<ThemeData> {
+  final int themeID;
+  final String themeName;
+  final String themePath;
+  const ThemeData({
+    required this.themeID,
+    required this.themeName,
+    required this.themePath,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['theme_i_d'] = Variable<int>(themeID);
+    map['theme_name'] = Variable<String>(themeName);
+    map['theme_path'] = Variable<String>(themePath);
+    return map;
+  }
+
+  ThemeTableCompanion toCompanion(bool nullToAbsent) {
+    return ThemeTableCompanion(
+      themeID: Value(themeID),
+      themeName: Value(themeName),
+      themePath: Value(themePath),
+    );
+  }
+
+  factory ThemeData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ThemeData(
+      themeID: serializer.fromJson<int>(json['themeID']),
+      themeName: serializer.fromJson<String>(json['themeName']),
+      themePath: serializer.fromJson<String>(json['themePath']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'themeID': serializer.toJson<int>(themeID),
+      'themeName': serializer.toJson<String>(themeName),
+      'themePath': serializer.toJson<String>(themePath),
+    };
+  }
+
+  ThemeData copyWith({int? themeID, String? themeName, String? themePath}) =>
+      ThemeData(
+        themeID: themeID ?? this.themeID,
+        themeName: themeName ?? this.themeName,
+        themePath: themePath ?? this.themePath,
+      );
+  ThemeData copyWithCompanion(ThemeTableCompanion data) {
+    return ThemeData(
+      themeID: data.themeID.present ? data.themeID.value : this.themeID,
+      themeName: data.themeName.present ? data.themeName.value : this.themeName,
+      themePath: data.themePath.present ? data.themePath.value : this.themePath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ThemeData(')
+          ..write('themeID: $themeID, ')
+          ..write('themeName: $themeName, ')
+          ..write('themePath: $themePath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(themeID, themeName, themePath);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ThemeData &&
+          other.themeID == this.themeID &&
+          other.themeName == this.themeName &&
+          other.themePath == this.themePath);
+}
+
+class ThemeTableCompanion extends UpdateCompanion<ThemeData> {
+  final Value<int> themeID;
+  final Value<String> themeName;
+  final Value<String> themePath;
+  const ThemeTableCompanion({
+    this.themeID = const Value.absent(),
+    this.themeName = const Value.absent(),
+    this.themePath = const Value.absent(),
+  });
+  ThemeTableCompanion.insert({
+    this.themeID = const Value.absent(),
+    required String themeName,
+    required String themePath,
+  }) : themeName = Value(themeName),
+       themePath = Value(themePath);
+  static Insertable<ThemeData> custom({
+    Expression<int>? themeID,
+    Expression<String>? themeName,
+    Expression<String>? themePath,
+  }) {
+    return RawValuesInsertable({
+      if (themeID != null) 'theme_i_d': themeID,
+      if (themeName != null) 'theme_name': themeName,
+      if (themePath != null) 'theme_path': themePath,
+    });
+  }
+
+  ThemeTableCompanion copyWith({
+    Value<int>? themeID,
+    Value<String>? themeName,
+    Value<String>? themePath,
+  }) {
+    return ThemeTableCompanion(
+      themeID: themeID ?? this.themeID,
+      themeName: themeName ?? this.themeName,
+      themePath: themePath ?? this.themePath,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (themeID.present) {
+      map['theme_i_d'] = Variable<int>(themeID.value);
+    }
+    if (themeName.present) {
+      map['theme_name'] = Variable<String>(themeName.value);
+    }
+    if (themePath.present) {
+      map['theme_path'] = Variable<String>(themePath.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ThemeTableCompanion(')
+          ..write('themeID: $themeID, ')
+          ..write('themeName: $themeName, ')
+          ..write('themePath: $themePath')
           ..write(')'))
         .toString();
   }
@@ -12027,6 +12816,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $HealthMetricsTableTable(this);
   late final $MealsTableTable mealsTable = $MealsTableTable(this);
   late final $DaysTableTable daysTable = $DaysTableTable(this);
+  late final $ScoresTableTable scoresTable = $ScoresTableTable(this);
+  late final $ThemeTableTable themeTable = $ThemeTableTable(this);
   late final ThemesTableDAO themesTableDAO = ThemesTableDAO(
     this as AppDatabase,
   );
@@ -12052,6 +12843,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final HealthMealDAO healthMealDAO = HealthMealDAO(this as AppDatabase);
+  late final ScoreDAO scoreDAO = ScoreDAO(this as AppDatabase);
+  late final ThemeDAO themeDAO = ThemeDAO(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -12077,6 +12870,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     healthMetricsTable,
     mealsTable,
     daysTable,
+    scoresTable,
+    themeTable,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -12165,6 +12960,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('health_metrics_table', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'persons_table',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('scores_table', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -13409,6 +14211,28 @@ final class $$PersonsTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$ScoresTableTable, List<ScoreData>>
+  _scoresTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.scoresTable,
+    aliasName: $_aliasNameGenerator(
+      db.personsTable.personID,
+      db.scoresTable.personID,
+    ),
+  );
+
+  $$ScoresTableTableProcessedTableManager get scoresTableRefs {
+    final manager = $$ScoresTableTableTableManager($_db, $_db.scoresTable)
+        .filter(
+          (f) =>
+              f.personID.personID.sqlEquals($_itemColumn<int>('person_i_d')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(_scoresTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PersonsTableTableFilterComposer
@@ -13762,6 +14586,31 @@ class $$PersonsTableTableFilterComposer
           }) => $$HealthMetricsTableTableFilterComposer(
             $db: $db,
             $table: $db.healthMetricsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> scoresTableRefs(
+    Expression<bool> Function($$ScoresTableTableFilterComposer f) f,
+  ) {
+    final $$ScoresTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.scoresTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ScoresTableTableFilterComposer(
+            $db: $db,
+            $table: $db.scoresTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -14181,6 +15030,31 @@ class $$PersonsTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> scoresTableRefs<T extends Object>(
+    Expression<T> Function($$ScoresTableTableAnnotationComposer a) f,
+  ) {
+    final $$ScoresTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.scoresTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ScoresTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.scoresTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PersonsTableTableTableManager
@@ -14209,6 +15083,7 @@ class $$PersonsTableTableTableManager
             bool personWidgetsTableRefs,
             bool cVAddressesTableRefs,
             bool healthMetricsTableRefs,
+            bool scoresTableRefs,
           })
         > {
   $$PersonsTableTableTableManager(_$AppDatabase db, $PersonsTableTable table)
@@ -14292,6 +15167,7 @@ class $$PersonsTableTableTableManager
                 personWidgetsTableRefs = false,
                 cVAddressesTableRefs = false,
                 healthMetricsTableRefs = false,
+                scoresTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -14308,6 +15184,7 @@ class $$PersonsTableTableTableManager
                     if (personWidgetsTableRefs) db.personWidgetsTable,
                     if (cVAddressesTableRefs) db.cVAddressesTable,
                     if (healthMetricsTableRefs) db.healthMetricsTable,
+                    if (scoresTableRefs) db.scoresTable,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -14564,6 +15441,27 @@ class $$PersonsTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (scoresTableRefs)
+                        await $_getPrefetchedData<
+                          PersonData,
+                          $PersonsTableTable,
+                          ScoreData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PersonsTableTableReferences
+                              ._scoresTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PersonsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).scoresTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.personID == item.personID,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -14597,6 +15495,7 @@ typedef $$PersonsTableTableProcessedTableManager =
         bool personWidgetsTableRefs,
         bool cVAddressesTableRefs,
         bool healthMetricsTableRefs,
+        bool scoresTableRefs,
       })
     >;
 typedef $$EmailAddressesTableTableCreateCompanionBuilder =
@@ -21115,6 +22014,537 @@ typedef $$DaysTableTableProcessedTableManager =
       DayData,
       PrefetchHooks Function()
     >;
+typedef $$ScoresTableTableCreateCompanionBuilder =
+    ScoresTableCompanion Function({
+      Value<int> scoreID,
+      required int personID,
+      Value<double> healthGlobalScore,
+      Value<double> socialGlobalScore,
+      Value<double> financialGlobalScore,
+      Value<double> careerGlobalScore,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$ScoresTableTableUpdateCompanionBuilder =
+    ScoresTableCompanion Function({
+      Value<int> scoreID,
+      Value<int> personID,
+      Value<double> healthGlobalScore,
+      Value<double> socialGlobalScore,
+      Value<double> financialGlobalScore,
+      Value<double> careerGlobalScore,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+final class $$ScoresTableTableReferences
+    extends BaseReferences<_$AppDatabase, $ScoresTableTable, ScoreData> {
+  $$ScoresTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PersonsTableTable _personIDTable(_$AppDatabase db) =>
+      db.personsTable.createAlias(
+        $_aliasNameGenerator(db.scoresTable.personID, db.personsTable.personID),
+      );
+
+  $$PersonsTableTableProcessedTableManager get personID {
+    final $_column = $_itemColumn<int>('person_i_d')!;
+
+    final manager = $$PersonsTableTableTableManager(
+      $_db,
+      $_db.personsTable,
+    ).filter((f) => f.personID.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_personIDTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ScoresTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ScoresTableTable> {
+  $$ScoresTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get scoreID => $composableBuilder(
+    column: $table.scoreID,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get healthGlobalScore => $composableBuilder(
+    column: $table.healthGlobalScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get socialGlobalScore => $composableBuilder(
+    column: $table.socialGlobalScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get financialGlobalScore => $composableBuilder(
+    column: $table.financialGlobalScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get careerGlobalScore => $composableBuilder(
+    column: $table.careerGlobalScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PersonsTableTableFilterComposer get personID {
+    final $$PersonsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ScoresTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ScoresTableTable> {
+  $$ScoresTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get scoreID => $composableBuilder(
+    column: $table.scoreID,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get healthGlobalScore => $composableBuilder(
+    column: $table.healthGlobalScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get socialGlobalScore => $composableBuilder(
+    column: $table.socialGlobalScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get financialGlobalScore => $composableBuilder(
+    column: $table.financialGlobalScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get careerGlobalScore => $composableBuilder(
+    column: $table.careerGlobalScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PersonsTableTableOrderingComposer get personID {
+    final $$PersonsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ScoresTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ScoresTableTable> {
+  $$ScoresTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get scoreID =>
+      $composableBuilder(column: $table.scoreID, builder: (column) => column);
+
+  GeneratedColumn<double> get healthGlobalScore => $composableBuilder(
+    column: $table.healthGlobalScore,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get socialGlobalScore => $composableBuilder(
+    column: $table.socialGlobalScore,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get financialGlobalScore => $composableBuilder(
+    column: $table.financialGlobalScore,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get careerGlobalScore => $composableBuilder(
+    column: $table.careerGlobalScore,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$PersonsTableTableAnnotationComposer get personID {
+    final $$PersonsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ScoresTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ScoresTableTable,
+          ScoreData,
+          $$ScoresTableTableFilterComposer,
+          $$ScoresTableTableOrderingComposer,
+          $$ScoresTableTableAnnotationComposer,
+          $$ScoresTableTableCreateCompanionBuilder,
+          $$ScoresTableTableUpdateCompanionBuilder,
+          (ScoreData, $$ScoresTableTableReferences),
+          ScoreData,
+          PrefetchHooks Function({bool personID})
+        > {
+  $$ScoresTableTableTableManager(_$AppDatabase db, $ScoresTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScoresTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ScoresTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ScoresTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> scoreID = const Value.absent(),
+                Value<int> personID = const Value.absent(),
+                Value<double> healthGlobalScore = const Value.absent(),
+                Value<double> socialGlobalScore = const Value.absent(),
+                Value<double> financialGlobalScore = const Value.absent(),
+                Value<double> careerGlobalScore = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ScoresTableCompanion(
+                scoreID: scoreID,
+                personID: personID,
+                healthGlobalScore: healthGlobalScore,
+                socialGlobalScore: socialGlobalScore,
+                financialGlobalScore: financialGlobalScore,
+                careerGlobalScore: careerGlobalScore,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> scoreID = const Value.absent(),
+                required int personID,
+                Value<double> healthGlobalScore = const Value.absent(),
+                Value<double> socialGlobalScore = const Value.absent(),
+                Value<double> financialGlobalScore = const Value.absent(),
+                Value<double> careerGlobalScore = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ScoresTableCompanion.insert(
+                scoreID: scoreID,
+                personID: personID,
+                healthGlobalScore: healthGlobalScore,
+                socialGlobalScore: socialGlobalScore,
+                financialGlobalScore: financialGlobalScore,
+                careerGlobalScore: careerGlobalScore,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ScoresTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({personID = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (personID) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.personID,
+                                referencedTable: $$ScoresTableTableReferences
+                                    ._personIDTable(db),
+                                referencedColumn: $$ScoresTableTableReferences
+                                    ._personIDTable(db)
+                                    .personID,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ScoresTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ScoresTableTable,
+      ScoreData,
+      $$ScoresTableTableFilterComposer,
+      $$ScoresTableTableOrderingComposer,
+      $$ScoresTableTableAnnotationComposer,
+      $$ScoresTableTableCreateCompanionBuilder,
+      $$ScoresTableTableUpdateCompanionBuilder,
+      (ScoreData, $$ScoresTableTableReferences),
+      ScoreData,
+      PrefetchHooks Function({bool personID})
+    >;
+typedef $$ThemeTableTableCreateCompanionBuilder =
+    ThemeTableCompanion Function({
+      Value<int> themeID,
+      required String themeName,
+      required String themePath,
+    });
+typedef $$ThemeTableTableUpdateCompanionBuilder =
+    ThemeTableCompanion Function({
+      Value<int> themeID,
+      Value<String> themeName,
+      Value<String> themePath,
+    });
+
+class $$ThemeTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ThemeTableTable> {
+  $$ThemeTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get themeID => $composableBuilder(
+    column: $table.themeID,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get themeName => $composableBuilder(
+    column: $table.themeName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get themePath => $composableBuilder(
+    column: $table.themePath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ThemeTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ThemeTableTable> {
+  $$ThemeTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get themeID => $composableBuilder(
+    column: $table.themeID,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get themeName => $composableBuilder(
+    column: $table.themeName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get themePath => $composableBuilder(
+    column: $table.themePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ThemeTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ThemeTableTable> {
+  $$ThemeTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get themeID =>
+      $composableBuilder(column: $table.themeID, builder: (column) => column);
+
+  GeneratedColumn<String> get themeName =>
+      $composableBuilder(column: $table.themeName, builder: (column) => column);
+
+  GeneratedColumn<String> get themePath =>
+      $composableBuilder(column: $table.themePath, builder: (column) => column);
+}
+
+class $$ThemeTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ThemeTableTable,
+          ThemeData,
+          $$ThemeTableTableFilterComposer,
+          $$ThemeTableTableOrderingComposer,
+          $$ThemeTableTableAnnotationComposer,
+          $$ThemeTableTableCreateCompanionBuilder,
+          $$ThemeTableTableUpdateCompanionBuilder,
+          (
+            ThemeData,
+            BaseReferences<_$AppDatabase, $ThemeTableTable, ThemeData>,
+          ),
+          ThemeData,
+          PrefetchHooks Function()
+        > {
+  $$ThemeTableTableTableManager(_$AppDatabase db, $ThemeTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ThemeTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ThemeTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ThemeTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> themeID = const Value.absent(),
+                Value<String> themeName = const Value.absent(),
+                Value<String> themePath = const Value.absent(),
+              }) => ThemeTableCompanion(
+                themeID: themeID,
+                themeName: themeName,
+                themePath: themePath,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> themeID = const Value.absent(),
+                required String themeName,
+                required String themePath,
+              }) => ThemeTableCompanion.insert(
+                themeID: themeID,
+                themeName: themeName,
+                themePath: themePath,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ThemeTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ThemeTableTable,
+      ThemeData,
+      $$ThemeTableTableFilterComposer,
+      $$ThemeTableTableOrderingComposer,
+      $$ThemeTableTableAnnotationComposer,
+      $$ThemeTableTableCreateCompanionBuilder,
+      $$ThemeTableTableUpdateCompanionBuilder,
+      (ThemeData, BaseReferences<_$AppDatabase, $ThemeTableTable, ThemeData>),
+      ThemeData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -21162,4 +22592,8 @@ class $AppDatabaseManager {
       $$MealsTableTableTableManager(_db, _db.mealsTable);
   $$DaysTableTableTableManager get daysTable =>
       $$DaysTableTableTableManager(_db, _db.daysTable);
+  $$ScoresTableTableTableManager get scoresTable =>
+      $$ScoresTableTableTableManager(_db, _db.scoresTable);
+  $$ThemeTableTableTableManager get themeTable =>
+      $$ThemeTableTableTableManager(_db, _db.themeTable);
 }

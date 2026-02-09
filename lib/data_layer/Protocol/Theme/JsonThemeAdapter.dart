@@ -12,9 +12,16 @@ Color _parseColor(String hex) {
   cleanHex = cleanHex.replaceAll(RegExp(r'[^\dA-Fa-f0-9xX]'), '');
 
   // 3. Ensure it starts with '0x' if the original JSON used the full ARGB format.
-  if (!cleanHex.startsWith('0x')) {
-    cleanHex = '0x$cleanHex';
+  if (cleanHex.startsWith('0x') || cleanHex.startsWith('0X')) {
+    cleanHex = cleanHex.substring(2);
   }
+
+  // Handle 6-character hex (RRGGBB) -> AARRGGBB
+  if (cleanHex.length == 6) {
+    cleanHex = 'FF$cleanHex';
+  }
+
+  cleanHex = '0x$cleanHex';
 
   try {
     // 4. Parse the cleaned string with radix 16 (which is automatic with '0x')
@@ -61,9 +68,11 @@ class JsonThemeAdapter {
 
     ColorScheme colorScheme;
 
-    // Check for 'seed_color' to use Material 3 generation
-    if (jsonMap.containsKey('seed_color')) {
-      final Color seedColor = _parseColor(jsonMap['seed_color']);
+    // Check for 'seed_color' or 'seed' to use Material 3 generation
+    if (jsonMap.containsKey('seed_color') || jsonMap.containsKey('seed')) {
+      final Color seedColor = _parseColor(
+        jsonMap['seed_color'] ?? jsonMap['seed'],
+      );
       colorScheme = ColorScheme.fromSeed(
         seedColor: seedColor,
         brightness: brightness,
@@ -79,6 +88,12 @@ class JsonThemeAdapter {
             : null,
         onSecondary: colorsJson.containsKey('onSecondary')
             ? _parseColor(colorsJson['onSecondary'])
+            : null,
+        tertiary: colorsJson.containsKey('tertiary')
+            ? _parseColor(colorsJson['tertiary'])
+            : null,
+        onTertiary: colorsJson.containsKey('onTertiary')
+            ? _parseColor(colorsJson['onTertiary'])
             : null,
         surface: colorsJson.containsKey('surface')
             ? _parseColor(colorsJson['surface'])
@@ -101,11 +116,16 @@ class JsonThemeAdapter {
         onPrimary: _parseColor(colorsJson['onPrimary'] ?? '0xFFFFFFFF'),
         secondary: _parseColor(colorsJson['secondary'] ?? '0xFF000000'),
         onSecondary: _parseColor(colorsJson['onSecondary'] ?? '0xFFFFFFFF'),
+        tertiary: colorsJson.containsKey('tertiary')
+            ? _parseColor(colorsJson['tertiary'])
+            : null,
+        onTertiary: colorsJson.containsKey('onTertiary')
+            ? _parseColor(colorsJson['onTertiary'])
+            : null,
         surface: _parseColor(colorsJson['surface'] ?? '0xFFFFFFFF'),
         onSurface: _parseColor(colorsJson['onSurface'] ?? '0xFF000000'),
         error: _parseColor(colorsJson['error'] ?? '0xFFB00020'),
         onError: _parseColor(colorsJson['onError'] ?? '0xFFFFFFFF'),
-        // Add other ColorScheme properties if defined in JSON
       );
     }
 
@@ -175,6 +195,29 @@ class JsonThemeAdapter {
       textStyle: textTheme.labelLarge, // Apply parsed labelLarge style
     );
 
+    // Card Theme
+    final Map<String, dynamic> cardJson = componentsJson['card'] ?? {};
+    final cardTheme = CardThemeData(
+      color: cardJson['backgroundColor'] != null
+          ? _parseColor(cardJson['backgroundColor'])
+          : null,
+      elevation: (cardJson['elevation'] as num?)?.toDouble(),
+      shape: cardJson['borderRadius'] != null
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                (cardJson['borderRadius'] as num?)?.toDouble() ?? 8.0,
+              ),
+            )
+          : null,
+    );
+
+    // Icon Theme
+    final Map<String, dynamic> iconJson = componentsJson['icon'] ?? {};
+    final IconThemeData iconTheme = IconThemeData(
+      color: iconJson['color'] != null ? _parseColor(iconJson['color']) : null,
+      size: (iconJson['size'] as num?)?.toDouble(),
+    );
+
     // --- 4. Final ThemeData Construction ---
     return ThemeData(
       useMaterial3: jsonMap['useMaterial3'] ?? true, // Set Material 3 flag
@@ -186,12 +229,11 @@ class JsonThemeAdapter {
       // Apply Component Themes
       appBarTheme: appBarTheme,
       elevatedButtonTheme: ElevatedButtonThemeData(style: elevatedButtonStyles),
-      // Add other component themes (FloatingActionButtonTheme, CardTheme, etc.) here
+      cardTheme: cardTheme,
+      iconTheme: iconTheme,
 
       // Explicitly set primaryColor and accentColor for backward compatibility (optional)
       primaryColor: colorScheme.primary,
-
-      // accentColor is deprecated, use colorScheme.secondary
     );
   }
 }

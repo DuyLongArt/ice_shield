@@ -12,6 +12,7 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/ContentBlock.d
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/WidgetSettingsBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/ObjectDatabaseBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -226,6 +227,11 @@ class _DataLayerState extends State<DataLayer> {
         Provider<WidgetSettingsBlock>(
           create: (_) =>
               WidgetSettingsBlock()..init(widget.database.widgetDAO, 1),
+          dispose: (_, block) => block.dispose(),
+        ),
+
+        Provider<ScoreBlock>(
+          create: (_) => ScoreBlock()..init(widget.database.scoreDAO, 1),
           dispose: (_, block) => block.dispose(),
         ),
       ],

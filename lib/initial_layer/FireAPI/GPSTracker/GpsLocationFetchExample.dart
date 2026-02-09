@@ -54,7 +54,7 @@ Future<void> example2FetchCurrentLocation() async {
     // Fetch current location
     final location = await apiClient.api.getCurrentLocation();
 
-    p
+    
   } on DioException catch (e) {
     print('Error fetching location: ${e.message}');
     if (e.response != null) {

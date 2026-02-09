@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart'; // Standard Flutter Material
 import 'package:ice_shield/initial_layer/DataLayer.dart';
-import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart' hide ThemeData;
 import 'package:ice_shield/data_layer/Protocol/Theme/ThemeAdapter.dart';
 import 'package:ice_shield/initial_layer/ThemeLayer.dart';
 import 'package:ice_shield/security_routing_layer/Routing/url_route/InternalRoute.dart';

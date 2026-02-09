@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/Protocol/Health/HealthMetricsData.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreData.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/data_layer/Protocol/Home/InternalWidgetProtocol.dart';
@@ -48,18 +50,23 @@ class _HomePageState extends State<HomePage> {
   late PersonBlock personBlock;
   late HealthMetricsDAO healthMetricsDAO;
   late Map<String, HealthMetric> healthMetricsData;
+  late ScoreBlock scoreBlock;
+  // late ThemeDAO themeDAO;
   @override
   void initState() {
     super.initState();
     database = context.read<AppDatabase>();
     internalWidgetBlock = context.read<InternalWidgetBlock>();
-
+    // themeDAO = context.read<ThemeDAO>();
     authBlock = context.read<AuthBlock>();
+    scoreBlock = context.read<ScoreBlock>();
     authBlock.fetchUser();
     personBlock = context.read<PersonBlock>();
     healthMetricsDAO = database.healthMetricsDAO;
     personBlock.fetchFromDatabase(authBlock.jwt.value!);
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      printCurrentThemeData(context);
+    });
     Future.microtask(() {
       internalWidgetBlock.refreshBlock(database.internalWidgetsDAO);
       HealthMetricsData.getMetricsByDay(DateTime.now(), context).then((
@@ -73,6 +80,11 @@ class _HomePageState extends State<HomePage> {
         }
       });
     });
+  }
+
+  void printCurrentThemeData(BuildContext context) async {
+    var currentThemeData = await database.themeDAO.getCurrentTheme();
+    print("Current theme data: ${currentThemeData?.themePath}");
   }
 
   void _navigateInternalUrl(String name) {
@@ -127,6 +139,7 @@ class _HomePageState extends State<HomePage> {
                       '${healthMetricsData['steps']?.value} steps ' +
                           '${healthMetricsData['food']?.value} calories',
                       '/health',
+                      scoreBlock.score.healthGlobalScore,
                     ),
                     _buildQuickAccessCard(
                       context,
@@ -135,6 +148,7 @@ class _HomePageState extends State<HomePage> {
                       Colors.blue,
                       '\$5,420',
                       '/finance',
+                      scoreBlock.score.financialGlobalScore,
                     ),
                     _buildQuickAccessCard(
                       context,
@@ -143,6 +157,7 @@ class _HomePageState extends State<HomePage> {
                       Colors.purple,
                       '48 friends',
                       '/social',
+                      scoreBlock.score.socialGlobalScore,
                     ),
                     _buildQuickAccessCard(
                       context,
@@ -151,6 +166,7 @@ class _HomePageState extends State<HomePage> {
                       Colors.orange,
                       '4 active',
                       '/projects',
+                      scoreBlock.score.careerGlobalScore,
                     ),
                   ],
                 ),
@@ -177,20 +193,21 @@ class _HomePageState extends State<HomePage> {
                 )
               else
                 SizedBox(
-  height: 120, // Chiều cao cố định cho hàng Quick Access
-  child: ListView.separated(
-    scrollDirection: Axis.horizontal, // Cuộn ngang
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    itemCount: widgets.length,
-    separatorBuilder: (context, index) => const SizedBox(width: 12), // Khoảng cách giữa các nút
-    itemBuilder: (context, index) {
-      return SizedBox(
-        width: 120, // Độ rộng cố định cho từng nút
-        child: _buildGridItem(context, widgets[index]),
-      );
-    },
-  ),
-),
+                  height: 120, // Chiều cao cố định cho hàng Quick Access
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal, // Cuộn ngang
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: widgets.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 12), // Khoảng cách giữa các nút
+                    itemBuilder: (context, index) {
+                      return SizedBox(
+                        width: 120, // Độ rộng cố định cho từng nút
+                        child: _buildGridItem(context, widgets[index]),
+                      );
+                    },
+                  ),
+                ),
 
               const SizedBox(height: 16), // Padding cuối trang
               AutoSizeText(
@@ -235,6 +252,7 @@ class _HomePageState extends State<HomePage> {
     Color color,
     String subtitle,
     String route,
+    double scoreData,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
@@ -258,6 +276,7 @@ class _HomePageState extends State<HomePage> {
                   backgroundColor: color.withOpacity(0.1),
                   child: Icon(icon, color: color, size: 40),
                 ),
+                AutoSizeText(scoreData.toString()),
                 const Spacer(),
                 AutoSizeText(
                   title,
