@@ -342,7 +342,7 @@ class GoalsTable extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-@DataClassName("ScoreData")
+@DataClassName("ScoreLocalData")
 class ScoresTable extends Table {
   IntColumn get scoreID => integer().autoIncrement()();
   IntColumn get personID => integer().references(
@@ -531,17 +531,17 @@ class PersonDAO extends DatabaseAccessor<AppDatabase> with _$PersonDAOMixin {
 class ScoreDAO extends DatabaseAccessor<AppDatabase> with _$ScoreDAOMixin {
   ScoreDAO(super.db);
 
-  Future<int> insertOrUpdateScore(ScoreData score) {
+  Future<int> insertOrUpdateScore(ScoreLocalData score) {
     return into(scoresTable).insertOnConflictUpdate(score);
   }
 
-  Future<ScoreData?> getScoreByPersonID(int personID) {
+  Future<ScoreLocalData?> getScoreByPersonID(int personID) {
     return (select(
       scoresTable,
     )..where((tbl) => tbl.personID.equals(personID))).getSingleOrNull();
   }
 
-  Stream<ScoreData?> watchScoreByPersonID(int personID) {
+  Stream<ScoreLocalData?> watchScoreByPersonID(int personID) {
     return (select(
       scoresTable,
     )..where((tbl) => tbl.personID.equals(personID))).watchSingleOrNull();

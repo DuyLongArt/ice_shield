@@ -8,9 +8,12 @@ import '../../../data_layer/DataSources/local_database/Database.dart';
 // import '../../../data_layer/Protocol/Widget/InternalWidgetDragProtocol.dart';
 // import '../../../data_layer/Protocol/Widget/WidgetManagerBlock.dart';
 import '../../data_layer/Protocol/Canvas/InternalWidgetDragProtocol.dart';
+import 'package:ice_shield/orchestration_layer/Action/WidgetNavigator.dart';
 import '../../initial_layer/FireAPI/UrlNavigate.dart'; // Added for navigation
 import '../widget_page/AddPluginForm.dart';
 // import '../WidgetCard.dart'; // We will use BuildCard exclusively for the store to ensure consistent dragging size
+
+import 'package:flutter/services.dart';
 
 class StoreWidget extends StatelessWidget {
   const StoreWidget({super.key});
@@ -75,12 +78,10 @@ class StoreWidget extends StatelessWidget {
   InternalWidgetDragProtocol _protocolToDragProtocol(ExternalWidgetData data) {
     return InternalWidgetDragProtocol.item(
       name: data.name ?? 'Unknown',
-      // Use a distinct color for external items or a default
       color: "0xFF607D8B",
       url: "${data.protocol}://${data.host}${data.url}",
-      imageUrl:
-          "${data.protocol}://${data.host}${data.url}", // Use URL as image source for favicons
-      alias: 'plugin', // specific alias to trigger image logic
+      imageUrl: "${data.protocol}://${data.host}${data.url}",
+      alias: 'plugin',
       dateAdded: DateTime.now().toIso8601String(),
       widgetID: int.tryParse(data.widgetID.toString()) ?? 0,
       score: 5,
@@ -92,117 +93,132 @@ class StoreWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final dao = context.read<ExternalWidgetsDAO>();
 
-    return Container(
-      height:
-          MediaQuery.sizeOf(context).height *
-          0.13, // Slightly taller for better spacing
-      // padding: const EdgeInsets.only(top: 50, bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3), // Semi-transparent background
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
-      ),
-      // margin: const EdgeInsets.only(top: 50, bottom: 20),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+      child: Container(
+        height: 125,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(40),
+          border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 25,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(40),
+          child: StreamBuilder<List<ExternalWidgetData>>(
+            stream: dao.watchAllWidgets(),
+            builder: (context, snapshot) {
+              final List<InternalWidgetDragProtocol> combinedList =
+                  _getDefaultItems();
 
-      // 3. UNIFIED STREAM BUILDER
-      // This listens to the DB. When DB changes, the list updates automatically.
-      child: StreamBuilder<List<ExternalWidgetData>>(
-        stream: dao.watchAllWidgets(),
-        builder: (context, snapshot) {
-          // A. Start with the Default items
-          /// change from external to internal widget right? =
-          final List<InternalWidgetDragProtocol> combinedList =
-              _getDefaultItems();
-
-          // B. Add Database items if they exist
-          if (snapshot.hasData && snapshot.data != null) {
-            final externalItems = snapshot.data!
-                .map((data) => _protocolToDragProtocol(data))
-                .toList();
-            combinedList.addAll(externalItems);
-          }
-
-          // C. Render One Unified List
-          return ListView.separated(
-            scrollDirection: Axis.horizontal,
-            // padding: const EdgeInsets.all(16),
-            // margin: const EdgeInsets.all(16),
-            itemCount: combinedList.length + 1, // +1 for Add Button
-
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return InkWell(
-                  onTap: () => showAddWidgetDialog(context),
-                  borderRadius: BorderRadius.circular(16),
-
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      // color: Colors.white.withOpacity(0.1),
-                      // border: Border.all(color: Colors.white),
-                      // borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, color: Colors.white),
-                        // SizedBox(height: 4),
-                        Text(
-                          "Add New",
-                          style: TextStyle(color: Colors.white, fontSize: 9),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+              if (snapshot.hasData && snapshot.data != null) {
+                final externalItems = snapshot.data!
+                    .map((data) => _protocolToDragProtocol(data))
+                    .toList();
+                combinedList.addAll(externalItems);
               }
 
-              final item = combinedList[index - 1]; // Adjust index
-
-              return Container(
-                padding: EdgeInsets.only(
-                  top: MediaQuery.sizeOf(context).height * 0.03,
-                  bottom: 10,
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
                 ),
-                width: MediaQuery.sizeOf(context).height * 0.08,
-                child: Draggable<InternalWidgetDragProtocol>(
-                  // Logic: IDGen in the Grid will handle creating a unique ID upon drop
-                  data: item,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: combinedList.length + 1,
+                separatorBuilder: (_, __) => const SizedBox(width: 20),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _buildAddButton(context);
+                  }
 
-                  feedback: Material(
-                    // color: Colors.transparent,
-                    child: Transform.scale(
-                      scale: 1.0,
-                      child: BuildCard(
-                        item: item,
-                        isDragging: true,
-                        cardWidth: MediaQuery.sizeOf(context).height * 0.08,
-                        cardHeight: MediaQuery.sizeOf(context).height * 0.08,
-                        name: item.name,
-                      ),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: 80,
-                        height: 80,
+                  final item = combinedList[index - 1];
+
+                  return Draggable<InternalWidgetDragProtocol>(
+                    data: item,
+                    onDragStarted: () => HapticFeedback.lightImpact(),
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: Transform.scale(
+                        scale: 1.15,
                         child: BuildCard(
                           item: item,
-                          cardWidth: 80,
-                          cardHeight: 80,
+                          isDragging: true,
+                          cardWidth: 85,
+                          cardHeight: 85,
                           name: item.name,
                         ),
                       ),
-                      // Text(item.name, style: TextStyle(color: Colors.white, fontSize: 9),)
-                    ],
-                  ),
-                ),
+                    ),
+                    childWhenDragging: Opacity(
+                      opacity: 0.1,
+                      child: BuildCard(
+                        item: item,
+                        cardWidth: 85,
+                        cardHeight: 85,
+                        name: item.name,
+                      ),
+                    ),
+                    child: BuildCard(
+                      item: item,
+                      cardWidth: 85,
+                      cardHeight: 85,
+                      name: item.name,
+                    ),
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddButton(BuildContext context) {
+    return InkWell(
+      onTap: () => showAddWidgetDialog(context),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        width: 85,
+        height: 85,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "New",
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -212,6 +228,9 @@ class StoreWidget extends StatelessWidget {
 class BuildCard extends StatelessWidget {
   final InternalWidgetDragProtocol item;
   final bool isDragging;
+  final double cardWidth;
+  final double cardHeight;
+  final String name;
 
   const BuildCard({
     super.key,
@@ -221,113 +240,6 @@ class BuildCard extends StatelessWidget {
     required this.cardHeight,
     required this.name,
   });
-
-  final double cardWidth;
-  final double cardHeight;
-  final String name;
-
-  // 1. Icon Logic for Default Items
-  IconData _getIcon(String alias) {
-    switch (alias.toLowerCase()) {
-      case 'facebook':
-        return Icons.facebook;
-      case 'instagram':
-        return Icons.camera_alt;
-      case 'phone':
-        return Icons.phone;
-      case 'messages':
-        return Icons.message;
-      case 'mail':
-        return Icons.email;
-      default:
-        return Icons.link_rounded; // Default icon for external links
-    }
-  }
-
-  // 2. Image/Favicon Logic for External Items
-  Widget _buildContent(BuildContext context) {
-    // If it's an external item (marked by alias or url presence)
-
-    return SizedBox(
-      width: cardWidth,
-      height: cardHeight,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Attempt to load Google Favicon
-          Container(
-            // color: Colors.red,
-            decoration: BoxDecoration(
-              // color: Colors.white,
-              shape: BoxShape.circle,
-              // borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.network(
-                'https://www.google.com/s2/favicons?sz=64&domain=${item.url}',
-                width: 36,
-                height: 36,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.public, color: Colors.white);
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(item.name, style: TextStyle(color: Colors.white, fontSize: 9)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-
-            child: (MediaQuery.sizeOf(context).height < 400)
-                ? AutoSizeText(
-                    item.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                      shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                : (Container()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Default Internal Items
-  //  Column(
-  //   mainAxisAlignment: MainAxisAlignment.center,
-  //   children: [
-  //     Icon(_getIcon(item.alias), color: Colors.white, size: 32),
-  //     const SizedBox(height: 8),
-  //     Text(
-  //       item.name,
-  //       style: const TextStyle(
-  //         color: Colors.white,
-  //         fontWeight: FontWeight.w600,
-  //         fontSize: 12,
-  //         shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
-  //       ),
-  //     ),
-  //     if (item.score > 0)
-  //       Text(
-  //         "${item.score}",
-  //         style: const TextStyle(color: Colors.white70, fontSize: 10),
-  //       ),
-  //   ],
-  // );
 
   Color _getColor(String hexString) {
     try {
@@ -340,48 +252,110 @@ class BuildCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _getColor(item.color);
+    final isIconOnly = item.alias != 'plugin';
 
-    return Card(
-      elevation: isDragging ? 12 : 4,
-      shadowColor: color.withOpacity(0.5),
-      color: Colors.transparent,
-      margin: EdgeInsets.zero, // Remove default margin
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () {
-          if (item.url.isNotEmpty) {
-            // print("Navigating to: ${item.url}");
-            // print("alias: ${item.alias}");
-            if (item.alias.contains("plugin")) {
-              navigateExternalUrl(context, item.url);
-              // print("DuyLongTest: ${item.url}");
-            } else {
-              urlNavigate(item.url);
+    return Hero(
+      tag: 'widget_${item.widgetID}_${item.name}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (item.url.isNotEmpty) {
+              if (item.alias.contains("plugin")) {
+                WidgetNavigatorAction.navigateExternalUrl(context, item.url);
+              } else {
+                urlNavigate(item.url);
+              }
             }
-            //  "${widgetData.protocol}://${widgetData.host}${widgetData.url}";
-            print("Navigating to: ${item.url}");
-          }
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          // width: 100, // Removed fixed width
-          // height: 100, // Removed fixed height
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color.withOpacity(0.9), color.withOpacity(0.7)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: cardWidth,
+            height: cardHeight,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [color.withOpacity(1.0), color.withOpacity(0.8)],
               ),
-            ],
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+                if (!isDragging)
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.1),
+                    blurRadius: 2,
+                    offset: const Offset(0, -1),
+                  ),
+              ],
+            ),
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isIconOnly)
+                  Icon(_getIcon(item.alias), color: Colors.white, size: 28)
+                else
+                  _buildFavicon(),
+                const SizedBox(height: 8),
+                AutoSizeText(
+                  name,
+                  maxLines: 1,
+                  minFontSize: 8,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
-          child: _buildContent(context),
+        ),
+      ),
+    );
+  }
+
+  IconData _getIcon(String alias) {
+    switch (alias.toLowerCase()) {
+      case 'facebook':
+        return Icons.facebook_rounded;
+      case 'instagram':
+        return Icons.camera_alt_rounded;
+      case 'phone':
+        return Icons.call_rounded;
+      case 'messages':
+        return Icons.textsms_rounded;
+      case 'mail':
+        return Icons.alternate_email_rounded;
+      default:
+        return Icons.link_rounded;
+    }
+  }
+
+  Widget _buildFavicon() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white30, width: 0.5),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: ClipOval(
+        child: Image.network(
+          'https://www.google.com/s2/favicons?sz=64&domain=${item.url}',
+          width: 24,
+          height: 24,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.public_rounded, color: Colors.white, size: 20),
         ),
       ),
     );
@@ -392,8 +366,8 @@ void showAddWidgetDialog(BuildContext context) {
   showDialog(
     context: context,
     builder: (context) => Dialog(
-      // backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: AddPluginForm(
         data: FormData(
           title: "Add Custom Widget",

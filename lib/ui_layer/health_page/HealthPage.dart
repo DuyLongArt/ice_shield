@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 //
 import 'package:provider/provider.dart';
-import 'package:signals_flutter/signals_flutter.dart';
 
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/ui_layer/health_page/HealthMetricCard.dart';
 import 'package:ice_shield/ui_layer/health_page/CaloriesMetrics.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
 import 'package:ice_shield/data_layer/Protocol/Health/HealthMetricsData.dart';
-import 'package:ice_shield/ui_layer/health_page/widgets/HealthPageHeader.dart';
 
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 
@@ -149,113 +147,235 @@ class _HealthPageState extends State<HealthPage> {
     _loadHealthData();
   }
 
+  double _p = 0, _c = 0, _f = 0, _kcal = 0;
+
   Future<void> _loadHealthData() async {
     setState(() => _isLoading = true);
 
-    // Simulate loading delay for smooth animation
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final healthMealDAO = context.read<HealthMealDAO>();
+      final today = DateTime.now();
 
-    // final calories = await _healthMealDAO.getCaloriesByDate(DateTime.now());
-    final data = await HealthMetricsData.getMetricsByDay(
-      DateTime.now(),
-      context,
-    );
-    setState(() {
-      _healthMetrics = data;
-      _isLoading = false;
-    });
+      // Load nutrition daily summary
+      final dayMeals = await healthMealDAO.getHealthMetricByDay(today);
+      double p = 0, c = 0, f = 0, kcal = 0;
+      for (var entry in dayMeals) {
+        p += entry.meal.protein;
+        c += entry.meal.carbs;
+        f += entry.meal.fat;
+        kcal += entry.meal.calories;
+      }
+
+      final data = await HealthMetricsData.getMetricsByDay(today, context);
+
+      if (mounted) {
+        setState(() {
+          _healthMetrics = data;
+          _p = p;
+          _c = c;
+          _f = f;
+          _kcal = kcal;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading health data: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final summary = HealthMetricsData.getDailySummary();
     compact = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: Watch((context) {
-        return RefreshIndicator(
-          onRefresh: _loadHealthData,
-          child: CustomScrollView(
-            slivers: [
-              // Header Section
-              SliverToBoxAdapter(
-                child: HealthPageHeader(
-                  completedGoals: summary['completed'] ?? 0,
-                  totalGoals: summary['total'] ?? 0,
+      body: RefreshIndicator(
+        onRefresh: _loadHealthData,
+        displacement: 40,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
+            // Top Padding for status bar if needed, or simple title
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+            // Macro Overview Section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _buildMacroOverview(),
+              ),
+            ),
+
+            // Section Header
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Insights',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'View All',
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ),
 
-              // Spacing
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-              // Featured Calorie Card
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [],
+            // Health Metrics Grid
+            _isLoading
+                ? const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: compact ? 0.95 : 1.3,
+                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return HealthMetricCard(
+                          metrics: _healthMetrics.values.elementAt(index),
+                        );
+                      }, childCount: _healthMetrics.length),
+                    ),
                   ),
-                ),
-              ),
 
-              // Spacing
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            // Bottom padding to avoid FAB overlap
+            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+          ],
+        ),
+      ),
+    );
+  }
 
-              // Health Metrics Section Header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Text(
-                    'Health Metrics',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+  Widget _buildMacroOverview() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "NUTRITION TARGET",
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_kcal.toInt()} kcal',
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
                       color: colorScheme.onSurface,
                     ),
                   ),
+                ],
+              ),
+              InkWell(
+                onTap: () => context.go('/health/food/dashboard'),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.restaurant_rounded,
+                    color: colorScheme.primary,
+                    size: 24,
+                  ),
                 ),
               ),
-
-              // Spacing
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-              // Health Metrics Grid
-              _isLoading
-                  ? SliverToBoxAdapter(
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(48.0),
-                          child: CircularProgressIndicator(
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    )
-                  : SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      sliver: SliverGrid(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: compact?16:64,
-                          
-                          mainAxisSpacing: compact?24:48,
-                          childAspectRatio: compact ? 1 : 1.6,
-                        ),
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          return HealthMetricCard(
-                            metrics: _healthMetrics.values.elementAt(index),
-                          );
-                        }, childCount: _healthMetrics.length),
-                      ),
-                    ),
-
-              // Bottom padding
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
-        );
-      }),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSimpleMacro('Protein', _p, Colors.orange),
+              _buildSimpleMacro('Carbs', _c, Colors.blue),
+              _buildSimpleMacro('Fat', _f, Colors.pink),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: (_kcal / 2000).clamp(0.0, 1.0), // Assuming 2k goal for now
+              minHeight: 8,
+              backgroundColor: colorScheme.primary.withOpacity(0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleMacro(String label, double value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: color.withOpacity(0.8),
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '${value.toInt()}g',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        ),
+      ],
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart'; // Standard Flutter Material
 import 'package:ice_shield/initial_layer/DataLayer.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart' hide ThemeData;
 import 'package:ice_shield/data_layer/Protocol/Theme/ThemeAdapter.dart';
+import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
 import 'package:ice_shield/initial_layer/ThemeLayer.dart';
 import 'package:ice_shield/security_routing_layer/Routing/url_route/InternalRoute.dart';
 import 'package:provider/provider.dart';
@@ -15,17 +16,8 @@ void main() async {
 
   late final AppDatabase database = AppDatabase();
 
-  // print("hi");
-  //  List<ExternalWidget> externalWidgetList=<ExternalWidget>[ExternalWidget(url: "url", imageUrl: "imageUrl", dateAdded: "dateAdded", widgetID: "", host: "host", protocol: "protocol")];
-  //   await Supabase.initialize(
-  //   url: 'https://mbjeohsjvauniqbizikv.supabase.co',
-  //   anonKey: '<prefer publishable key instead of anon key for mobile and desktop apps>',
-  // );
-
-  // --- ADD THESE LINES ---
-
-  //  debugPaintSizeEnabled=true;
-  // await monitoring();
+    final notificationService = LocalNotificationService();
+    await notificationService.init();  
   runApp(
     DataLayer(
       database: database,

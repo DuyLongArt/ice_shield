@@ -14,7 +14,7 @@ import 'package:ice_shield/ui_layer/health_page/subpage/FoodInputPage.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/WaterPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/TextEditorPage.dart';
 import 'package:ice_shield/ui_layer/widget_page/PluginList/IOTTracker/GPSTrackingPage.dart';
-import 'package:ice_shield/ui_layer/widget_page/PluginList/WebView/WebViewPage.dart';
+import 'package:ice_shield/orchestration_layer/Action/WebView/WebViewPage.dart';
 // // Import your pages
 // import 'package:ice_shield/ui_layer/BigWidget/DragCanvasGrid.dart'; // Your Grid
 // import 'package:ice_shield/ui_layer/HomePage.dart'; // Your Home

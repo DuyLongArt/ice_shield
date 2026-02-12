@@ -112,9 +112,14 @@ class _MainButtonState extends State<MainButton>
   }
 
   void _removeOverlayImmediate() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    if (mounted) setState(() => isDialActive = false);
+    if (_overlayEntry != null) {
+      final entry = _overlayEntry;
+      _overlayEntry = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        entry?.remove();
+        if (mounted) setState(() => isDialActive = false);
+      });
+    }
   }
 
   OverlayEntry _createOverlayEntry() {

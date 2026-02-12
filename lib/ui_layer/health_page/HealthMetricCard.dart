@@ -8,11 +8,7 @@ class HealthMetricCard extends StatelessWidget {
   final HealthMetric metrics;
   late bool compact;
 
-   HealthMetricCard({
-    super.key,
-    required this.metrics,
-  });
-
+  HealthMetricCard({super.key, required this.metrics});
 
   void _navigateToDetailPage(BuildContext context) {
     if (metrics.detailPage != null) {
@@ -31,31 +27,29 @@ class HealthMetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    compact=MediaQuery.of(context).size.width < 600;
+    compact = MediaQuery.of(context).size.width < 600;
 
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(color: colorScheme.outline, width: 1),
+        borderRadius: BorderRadius.circular(28.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.4),
+          width: 1,
+        ),
       ),
       child: InkWell(
         onTap: () => _navigateToDetailPage(context),
-        borderRadius: BorderRadius.circular(12.0),
-        child: Container(
-          padding: const EdgeInsets.all(12.0),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12.0),
-            // Optional: Keep a very subtle gradient or remove it for purer flat style
-            // gradient: LinearGradient(
-            //   begin: Alignment.topLeft,
-            //   end: Alignment.bottomRight,
-            //   colors: [
-            //     metrics.color.withOpacity(0.05),
-            //     metrics.color.withOpacity(0.02),
-            //   ],
-            // ),
-          ),
+        borderRadius: BorderRadius.circular(28.0),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,118 +58,100 @@ class HealthMetricCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: metrics.color.withOpacity(0.1), // Flatter look
-                      borderRadius: BorderRadius.circular(12),
+                      color: metrics.color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
                       metrics.icon,
                       color: metrics.color,
-                      size: compact ? 20 : 64,
+                      size: compact ? 22 : 28,
                     ),
                   ),
                   if (metrics.trend != null)
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        margin: const EdgeInsets.only(left: 8),
-                        decoration: BoxDecoration(
-                          color: (metrics.trendPositive ?? true)
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (metrics.trendPositive ?? true)
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            (metrics.trendPositive ?? true)
+                                ? Icons.trending_up
+                                : Icons.trending_down,
+                            size: 14,
                             color: (metrics.trendPositive ?? true)
-                                ? Colors.green.withOpacity(0.5)
-                                : Colors.red.withOpacity(0.5),
-                            width: 1,
+                                ? Colors.green
+                                : Colors.red,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              (metrics.trendPositive ?? true)
-                                  ? Icons.trending_up
-                                  : Icons.trending_down,
-                              size: 12,
+                          const SizedBox(width: 4),
+                          Text(
+                            metrics.trend!,
+                            style: TextStyle(
                               color: (metrics.trendPositive ?? true)
                                   ? Colors.green
                                   : Colors.red,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 10,
                             ),
-                            const SizedBox(width: 2),
-                            
-                            Text(
-                metrics.name,
-                style: textTheme.titleSmall?.copyWith(
-                  color:metrics.color,
-                  fontWeight: FontWeight.w600,
-                  fontSize: compact ? 10 : 32,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
               ),
-              // const Spacer(),
-              const SizedBox(height:12),
-              
-              const SizedBox(height: 2),
+              const SizedBox(height: 20),
+              Text(
+                metrics.name.toUpperCase(),
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  fontSize: 10,
+                ),
+              ),
+              const SizedBox(height: 4),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Expanded(
                     child: AutoSizeText(
                       metrics.value,
                       style: textTheme.headlineSmall?.copyWith(
-                        color: metrics.color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: compact ? 10 : 24,
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w900,
+                        fontSize: compact ? 24 : 28,
                       ),
                       maxLines: 1,
-                      minFontSize: 12,
                     ),
                   ),
-                  // const SizedBox(width: 4),
-                  AutoSizeText(
+                  const SizedBox(width: 4),
+                  Text(
                     metrics.unit,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
-                      fontSize: compact ? 10 : 24,
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w900,
                     ),
-                    maxLines: 1,
-                    minFontSize: 8,
                   ),
                 ],
               ),
-              if (metrics.subtitle != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  metrics.subtitle!,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSecondary,
-                    fontSize: compact ? 10 : 16,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
               if (metrics.progress != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
                     value: metrics.progress!.clamp(0.0, 1.0),
-                    minHeight: 4,
+                    minHeight: 6,
                     backgroundColor: metrics.color.withOpacity(0.1),
                     valueColor: AlwaysStoppedAnimation<Color>(metrics.color),
                   ),

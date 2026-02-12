@@ -68,57 +68,62 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
         builder: (context, candidateData, rejectedData) {
           final Color borderColor = isHovering
               ? Colors.cyanAccent
-              : Colors.white.withOpacity(0.1);
+              : Colors.white.withAlpha(25);
 
           return AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
-              color: isEmpty
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(
-                16,
-              ), // Matched to new card radius
-              border: Border.all(color: borderColor, width: isHovering ? 2 : 1),
+              color: isEmpty ? Colors.white.withAlpha(10) : Colors.transparent,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: borderColor,
+                width: isHovering ? 2.5 : 1.5,
+              ),
               boxShadow: isHovering
                   ? [
                       BoxShadow(
-                        color: Colors.cyanAccent.withOpacity(0.3),
-                        blurRadius: 8,
-                        spreadRadius: 1,
+                        color: Colors.cyanAccent.withOpacity(0.4),
+                        blurRadius: 12,
+                        spreadRadius: 2,
                       ),
                     ]
                   : [],
             ),
             child: isEmpty
-                ? const Center(
-                    child: Icon(Icons.add_rounded, color: Colors.white24),
+                ? Center(
+                    child: Icon(
+                      Icons.add_rounded,
+                      color: isHovering ? Colors.cyanAccent : Colors.white24,
+                      size: 28,
+                    ),
                   )
                 : Draggable<int>(
-                    // We pass the INDEX, not the object, to track where it came from
                     data: widget.index,
                     feedback: Material(
                       color: Colors.transparent,
                       child: Transform.scale(
-                        scale: 1.1,
+                        scale: 1.0,
                         child: BuildCard(
                           item: cellData,
                           isDragging: true,
-                          cardWidth: widget.widthCard / 2,
-                          cardHeight: widget.heightCard / 2,
+                          cardWidth: widget.widthCard,
+                          cardHeight: widget.heightCard,
                           name: widget.name,
                         ),
                       ),
                     ),
-                    childWhenDragging: Container(
-                      width: widget.widthCard,
-                      height: widget.heightCard,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
+                    childWhenDragging: Opacity(
+                      opacity: 0.3,
+                      child: BuildCard(
+                        item: cellData,
+                        cardWidth: widget.widthCard,
+                        cardHeight: widget.heightCard,
+                        name: widget.name,
                       ),
                     ),
                     child: Stack(
+                      clipBehavior: Clip.none,
                       children: [
                         BuildCard(
                           item: cellData,
@@ -127,25 +132,31 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
                           name: widget.name,
                         ),
                         Positioned(
-                          top: 4,
-                          right: 4,
+                          top: -8,
+                          right: -8,
                           child: InkWell(
-                            onTap: () {
-                              widget.store.removeByIndex(widget.index);
-                            },
+                            onTap: () =>
+                                widget.store.removeByIndex(widget.index),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
+                                color: Theme.of(context).colorScheme.error,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.white24,
-                                  width: 0.5,
+                                  color: Colors.white,
+                                  width: 2,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               padding: const EdgeInsets.all(4),
                               child: const Icon(
                                 Icons.close_rounded,
-                                size: 12,
+                                size: 14,
                                 color: Colors.white,
                               ),
                             ),

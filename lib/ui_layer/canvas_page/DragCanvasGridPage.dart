@@ -1,4 +1,5 @@
 // Required for ImageFilter
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
@@ -10,6 +11,7 @@ import 'package:provider/provider.dart';
 // --- IMPORTS ---
 // 1. The Data Protocol
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'InternalDragIconWidget.dart'; // The Grid Cell
@@ -33,7 +35,7 @@ void buildAddCell(BuildContext context) {
   );
 }
 
-class DragCanvasGrid extends StatelessWidget {
+class DragCanvasGrid extends StatefulWidget {
   const DragCanvasGrid({super.key});
 
   static Widget icon(BuildContext context, {double? size}) {
@@ -47,29 +49,43 @@ class DragCanvasGrid extends StatelessWidget {
   }
 
   @override
+  State<DragCanvasGrid> createState() => _DragCanvasGridState();
+}
+
+class _DragCanvasGridState extends State<DragCanvasGrid> {
+  late final ReadonlySignal<int?> personIdSignal;
+  late final WidgetManagerBlock widgetManagerBlock;
+
+  @override
+  void initState() {
+    super.initState();
+    final personBlock = context.read<PersonBlock>();
+    final widgetDao = context.read<WidgetDAO>();
+
+    personIdSignal = computed(() => personBlock.information.value.profiles.id);
+
+    widgetManagerBlock = WidgetManagerBlock(
+      widgetDao: widgetDao,
+      personIdSignal: personIdSignal,
+    );
+  }
+
+  @override
+  void dispose() {
+    widgetManagerBlock.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    // Neumorphic colors usually need a slight adjustment from the base surface
-    // to make the highlights pop.
     final baseColor = colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final widgetDao = context.read<WidgetDAO>();
-    final personBlock = context.read<PersonBlock>();
-
-    // Create a signal that extracts the ID from the personBlock information
-    final personIdSignal = computed(
-      () => personBlock.information.value.profiles.id,
-    );
-
-    return Provider<WidgetManagerBlock>(
-      create: (_) => WidgetManagerBlock(
-        widgetDao: widgetDao,
-        personIdSignal: personIdSignal,
-      ),
-      dispose: (_, block) => block.dispose(),
+    return Provider<WidgetManagerBlock>.value(
+      value: widgetManagerBlock,
       child: Scaffold(
-        backgroundColor: baseColor, // Match scaffold to surface
+        backgroundColor: baseColor,
         body: SafeArea(
           bottom: false,
           child: DragCanvas(baseColor: baseColor, isDark: isDark),
@@ -110,95 +126,88 @@ class _DragCanvasState extends State<DragCanvas> {
     final widgetBlock = Provider.of<WidgetManagerBlock>(context, listen: false);
     return Column(
       children: [
-        // HEADER
-        Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            textDirection: TextDirection.ltr,
-            children: [
-              Text(
-                "CANVAS",
-                style: TextStyle(
-                  fontSize: 14,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.6),
+        const SizedBox(height: 12),
+        // DYNAMIC ISLAND
+        Center(
+          child: Container(
+            width: 140,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              WidgetPage.icon(),
-
-              // Reset Button (Neumorphic)
-            ],
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      context.go('/');
+                    }
+                  },
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const AutoSizeText(
+                  "CANVAS",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold
+                  ),
+                 
+                ),
+                // WidgetPage.icon(),
+              ],
+            ),
           ),
         ),
+        const SizedBox(height: 10),
 
-        // MAIN GRID
+        // MAIN GRID (iPhone 16 Proportions)
         Expanded(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
             decoration: BoxDecoration(
-              color: widget.baseColor,
-              borderRadius: BorderRadius.circular(12),
+              color: widget.baseColor.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(35),
               border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.1),
+                color: Theme.of(context).dividerColor.withOpacity(0.03),
               ),
             ),
             child: Watch((context) {
-              // final width = MediaQuery.of(context).size.width;
-              // final height = MediaQuery.of(context).size.height;
-
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
+                physics: const BouncingScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   childAspectRatio: 1.0,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
                 ),
                 itemCount: widgetBlock.widgets.length,
                 itemBuilder: (context, index) {
                   return LayoutBuilder(
                     builder: (context, constraints) {
-                      // print(constraints.maxWidth);
-                      return Container(
-                        width: constraints.maxWidth,
-                        height: constraints.maxHeight,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            // iconSize: constraints.maxWidth/4,
-                            // iconSize: constraints.maxWidth/2,
-                            padding: EdgeInsets.zero,
-                            fixedSize: Size(
-                              constraints.maxWidth,
-                              constraints.maxHeight,
-                            ),
-                            backgroundColor: const Color.fromARGB(
-                              0,
-                              255,
-                              255,
-                              255,
-                            ),
-                          ),
-                          onPressed: () {
-                            buildAddCell(context);
-                          },
-                          child: InternalDragIconWidget(
-                            index: index,
-                            store: widgetBlock,
-                            widthCard: constraints.maxWidth,
-                            heightCard: constraints.maxHeight,
-                            name: widgetBlock.widgets[index].name,
-                          ),
-                          // ),
-                        ),
+                      return InternalDragIconWidget(
+                        index: index,
+                        store: widgetBlock,
+                        widthCard: constraints.maxWidth,
+                        heightCard: constraints.maxHeight,
+                        name: widgetBlock.widgets[index].name,
                       );
                     },
                   );
@@ -210,44 +219,30 @@ class _DragCanvasState extends State<DragCanvas> {
 
         const SizedBox(height: 16),
 
-        Row(
-          textDirection: TextDirection.rtl,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
-          children: [
-            Align(
-              alignment: Alignment.bottomRight,
-              child: GestureDetector(
-                onTap: () {
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () {
                   widgetBlock.resetGrid();
-                  // setState(() {
-                  setState(() {
-                    isClick = !isClick;
-                  });
-
-                  // });
+                  setState(() => isClick = !isClick);
                 },
-
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  // width: 20,
-                  height: 30,
-                  // width: 48,
-                  // height: 48,
-                  // padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isClick
-                        ? widget.baseColor
-                        : widget.baseColor.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor.withOpacity(0.1),
-                    ),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text("Reset Layout"),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
 
         // LIBRARY / STORE

@@ -1,0 +1,19 @@
+import 'dart:async';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:signals/signals.dart';
+
+class ExternalWidgetBlock {
+  final listExternalWidgets = signal<List<ExternalWidgetData>>([]);
+  StreamSubscription<List<ExternalWidgetData>>? _subscription;
+
+  void refreshBlock(ExternalWidgetsDAO dao) {
+    _subscription?.cancel();
+    _subscription = dao.watchAllWidgets().listen((data) {
+      listExternalWidgets.value = data;
+    });
+  }
+
+  void dispose() {
+    _subscription?.cancel();
+  }
+}

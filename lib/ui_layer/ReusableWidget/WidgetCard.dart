@@ -3,7 +3,7 @@ import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/ui_layer/widget_page/ConfirmDialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widget_page/PluginList/IOTTracker/OSMMapPlugin.dart';
-import '../widget_page/PluginList/WebView/LiveMapPlugin.dart';
+import '../../orchestration_layer/Action/WebView/LiveMapPlugin.dart';
 
 // ------------------------------------------
 // MOCK CLASSES & METHODS (Required for runnability)

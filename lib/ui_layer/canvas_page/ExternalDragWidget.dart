@@ -10,7 +10,7 @@ import '../../initial_layer/FireAPI/UrlNavigate.dart';
 import '../../data_layer/Protocol/Canvas/InternalWidgetDragProtocol.dart';
 import '../../orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
 import '../widget_page/PluginList/IOTTracker/CompactOSMMapWidget.dart';
-import '../widget_page/PluginList/WebView/WebViewWidget.dart';
+import '../../orchestration_layer/Action/WebView/WebViewWidget.dart';
 // import '../../data_layer/Protocol/Widget/InternalWidgetDragProtocol.dart';
 // import '../../data_layer/Protocol/Widget/WidgetManagerBlock.dart';
 // Ensure you import your DAO file here, e.g.:

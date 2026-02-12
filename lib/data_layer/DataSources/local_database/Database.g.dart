@@ -12002,7 +12002,7 @@ class DaysTableCompanion extends UpdateCompanion<DayData> {
 }
 
 class $ScoresTableTable extends ScoresTable
-    with TableInfo<$ScoresTableTable, ScoreData> {
+    with TableInfo<$ScoresTableTable, ScoreLocalData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -12129,7 +12129,7 @@ class $ScoresTableTable extends ScoresTable
   static const String $name = 'scores_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ScoreData> instance, {
+    Insertable<ScoreLocalData> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -12202,9 +12202,9 @@ class $ScoresTableTable extends ScoresTable
   @override
   Set<GeneratedColumn> get $primaryKey => {scoreID};
   @override
-  ScoreData map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ScoreLocalData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ScoreData(
+    return ScoreLocalData(
       scoreID: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}score_i_d'],
@@ -12246,7 +12246,7 @@ class $ScoresTableTable extends ScoresTable
   }
 }
 
-class ScoreData extends DataClass implements Insertable<ScoreData> {
+class ScoreLocalData extends DataClass implements Insertable<ScoreLocalData> {
   final int scoreID;
   final int personID;
   final double healthGlobalScore;
@@ -12255,7 +12255,7 @@ class ScoreData extends DataClass implements Insertable<ScoreData> {
   final double careerGlobalScore;
   final DateTime createdAt;
   final DateTime updatedAt;
-  const ScoreData({
+  const ScoreLocalData({
     required this.scoreID,
     required this.personID,
     required this.healthGlobalScore,
@@ -12292,12 +12292,12 @@ class ScoreData extends DataClass implements Insertable<ScoreData> {
     );
   }
 
-  factory ScoreData.fromJson(
+  factory ScoreLocalData.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ScoreData(
+    return ScoreLocalData(
       scoreID: serializer.fromJson<int>(json['scoreID']),
       personID: serializer.fromJson<int>(json['personID']),
       healthGlobalScore: serializer.fromJson<double>(json['healthGlobalScore']),
@@ -12325,7 +12325,7 @@ class ScoreData extends DataClass implements Insertable<ScoreData> {
     };
   }
 
-  ScoreData copyWith({
+  ScoreLocalData copyWith({
     int? scoreID,
     int? personID,
     double? healthGlobalScore,
@@ -12334,7 +12334,7 @@ class ScoreData extends DataClass implements Insertable<ScoreData> {
     double? careerGlobalScore,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) => ScoreData(
+  }) => ScoreLocalData(
     scoreID: scoreID ?? this.scoreID,
     personID: personID ?? this.personID,
     healthGlobalScore: healthGlobalScore ?? this.healthGlobalScore,
@@ -12344,8 +12344,8 @@ class ScoreData extends DataClass implements Insertable<ScoreData> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
-  ScoreData copyWithCompanion(ScoresTableCompanion data) {
-    return ScoreData(
+  ScoreLocalData copyWithCompanion(ScoresTableCompanion data) {
+    return ScoreLocalData(
       scoreID: data.scoreID.present ? data.scoreID.value : this.scoreID,
       personID: data.personID.present ? data.personID.value : this.personID,
       healthGlobalScore: data.healthGlobalScore.present
@@ -12367,7 +12367,7 @@ class ScoreData extends DataClass implements Insertable<ScoreData> {
 
   @override
   String toString() {
-    return (StringBuffer('ScoreData(')
+    return (StringBuffer('ScoreLocalData(')
           ..write('scoreID: $scoreID, ')
           ..write('personID: $personID, ')
           ..write('healthGlobalScore: $healthGlobalScore, ')
@@ -12394,7 +12394,7 @@ class ScoreData extends DataClass implements Insertable<ScoreData> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ScoreData &&
+      (other is ScoreLocalData &&
           other.scoreID == this.scoreID &&
           other.personID == this.personID &&
           other.healthGlobalScore == this.healthGlobalScore &&
@@ -12405,7 +12405,7 @@ class ScoreData extends DataClass implements Insertable<ScoreData> {
           other.updatedAt == this.updatedAt);
 }
 
-class ScoresTableCompanion extends UpdateCompanion<ScoreData> {
+class ScoresTableCompanion extends UpdateCompanion<ScoreLocalData> {
   final Value<int> scoreID;
   final Value<int> personID;
   final Value<double> healthGlobalScore;
@@ -12434,7 +12434,7 @@ class ScoresTableCompanion extends UpdateCompanion<ScoreData> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : personID = Value(personID);
-  static Insertable<ScoreData> custom({
+  static Insertable<ScoreLocalData> custom({
     Expression<int>? scoreID,
     Expression<int>? personID,
     Expression<double>? healthGlobalScore,
@@ -14212,7 +14212,7 @@ final class $$PersonsTableTableReferences
     );
   }
 
-  static MultiTypedResultKey<$ScoresTableTable, List<ScoreData>>
+  static MultiTypedResultKey<$ScoresTableTable, List<ScoreLocalData>>
   _scoresTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.scoresTable,
     aliasName: $_aliasNameGenerator(
@@ -15445,7 +15445,7 @@ class $$PersonsTableTableTableManager
                         await $_getPrefetchedData<
                           PersonData,
                           $PersonsTableTable,
-                          ScoreData
+                          ScoreLocalData
                         >(
                           currentTable: table,
                           referencedTable: $$PersonsTableTableReferences
@@ -22038,7 +22038,7 @@ typedef $$ScoresTableTableUpdateCompanionBuilder =
     });
 
 final class $$ScoresTableTableReferences
-    extends BaseReferences<_$AppDatabase, $ScoresTableTable, ScoreData> {
+    extends BaseReferences<_$AppDatabase, $ScoresTableTable, ScoreLocalData> {
   $$ScoresTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $PersonsTableTable _personIDTable(_$AppDatabase db) =>
@@ -22264,14 +22264,14 @@ class $$ScoresTableTableTableManager
         RootTableManager<
           _$AppDatabase,
           $ScoresTableTable,
-          ScoreData,
+          ScoreLocalData,
           $$ScoresTableTableFilterComposer,
           $$ScoresTableTableOrderingComposer,
           $$ScoresTableTableAnnotationComposer,
           $$ScoresTableTableCreateCompanionBuilder,
           $$ScoresTableTableUpdateCompanionBuilder,
-          (ScoreData, $$ScoresTableTableReferences),
-          ScoreData,
+          (ScoreLocalData, $$ScoresTableTableReferences),
+          ScoreLocalData,
           PrefetchHooks Function({bool personID})
         > {
   $$ScoresTableTableTableManager(_$AppDatabase db, $ScoresTableTable table)
@@ -22382,14 +22382,14 @@ typedef $$ScoresTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $ScoresTableTable,
-      ScoreData,
+      ScoreLocalData,
       $$ScoresTableTableFilterComposer,
       $$ScoresTableTableOrderingComposer,
       $$ScoresTableTableAnnotationComposer,
       $$ScoresTableTableCreateCompanionBuilder,
       $$ScoresTableTableUpdateCompanionBuilder,
-      (ScoreData, $$ScoresTableTableReferences),
-      ScoreData,
+      (ScoreLocalData, $$ScoresTableTableReferences),
+      ScoreLocalData,
       PrefetchHooks Function({bool personID})
     >;
 typedef $$ThemeTableTableCreateCompanionBuilder =
