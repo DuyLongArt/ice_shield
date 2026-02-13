@@ -116,8 +116,7 @@ class _adapterState extends State<Adapter> {
         // 2. Provide the MobX InternalWidgetBlock
         Provider<InternalWidgetBlock>.value(value: internalWidgetBlock),
 
-        // 4. Provide the static utility class
-        Provider<ThemeAdapter>(create: (_) => ThemeAdapter()),
+      
 
         // 5. Provide the AuthBlock
         Provider<AuthBlock>.value(value: authBlock),
