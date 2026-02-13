@@ -4,7 +4,7 @@ import 'package:ice_shield/data_layer/DataSources/local_database/DataSeeder.dart
 import 'package:ice_shield/data_layer/DataSources/local_database/DatabaseAgent.dart'
     as DatabaseAgent;
 import 'package:ice_shield/data_layer/Protocol/Canvas/ExternalWidgetProtocol.dart';
-import 'package:ice_shield/initial_layer/Services/CustomAuthService.dart';
+import 'package:ice_shield/initial_layer/DuyLongServices/CustomAuthService.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FinanceBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';

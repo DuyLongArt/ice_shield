@@ -75,6 +75,8 @@ class ScoreBlock {
   }
 
   void init(ScoreDAO dao, int personID) {
+    this._dao = dao;
+    this._personID = personID;
     dao.watchScoreByPersonID(personID).listen((data) {
       if (data != null) {
         updateScore(
@@ -87,6 +89,14 @@ class ScoreBlock {
         );
       }
     });
+  }
+
+  late ScoreDAO _dao;
+  late int _personID;
+
+  Future<void> persistentCareerIncrement(double points) async {
+    await _dao.incrementCareerScore(_personID, points);
+    // The signal will be updated by the listener in init
   }
 
   void dispose() {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:drift/drift.dart';
 import 'package:signals/signals.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/Protocol/User/GrowthProtocols.dart';
@@ -12,11 +13,17 @@ class GrowthBlock {
   StreamSubscription? _habitsSubscription;
   StreamSubscription? _skillsSubscription;
 
+  late GrowthDAO _dao;
+  late int _personId;
+
   void updateGoals(List<GoalProtocol> data) => goals.value = data;
   void updateHabits(List<HabitProtocol> data) => habits.value = data;
   void updateSkills(List<SkillProtocol> data) => skills.value = data;
 
   void init(GrowthDAO dao, int personId) {
+    _dao = dao;
+    _personId = personId;
+
     _goalsSubscription?.cancel();
     _goalsSubscription = dao.watchGoals(personId).listen((data) {
       updateGoals(
@@ -80,6 +87,24 @@ class GrowthBlock {
             .toList(),
       );
     });
+  }
+
+  Future<void> completeGoal(int goalID) async {
+    await _dao.updateGoalStatus(goalID, 'done');
+  }
+
+  Future<void> createNewTask(String title, String description) async {
+    await _dao.createGoal(
+      GoalsTableCompanion.insert(
+        personID: _personId,
+        title: title,
+        description: Value(description),
+        status: const Value('active'),
+        category: const Value('project'),
+        createdAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   void dispose() {

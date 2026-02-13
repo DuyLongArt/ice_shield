@@ -1,7 +1,7 @@
 // 1. Core Drift and Platform Imports
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart'; // For NativeDatabase on mobile/desktop
-import 'package:ice_shield/initial_layer/CurrentThemeData.dart';
+import 'package:ice_shield/initial_layer/ThemeLayer/CurrentThemeData.dart';
 import 'package:ice_shield/orchestration_layer/IDGen.dart';
 import 'package:ice_shield/data_layer/Protocol/Canvas/ExternalWidgetProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/PersonProtocol.dart';
@@ -546,6 +546,26 @@ class ScoreDAO extends DatabaseAccessor<AppDatabase> with _$ScoreDAOMixin {
       scoresTable,
     )..where((tbl) => tbl.personID.equals(personID))).watchSingleOrNull();
   }
+
+  Future<void> incrementCareerScore(int personID, double points) async {
+    final existing = await getScoreByPersonID(personID);
+    if (existing != null) {
+      await update(scoresTable).replace(
+        existing.copyWith(
+          careerGlobalScore: existing.careerGlobalScore + points,
+          updatedAt: DateTime.now(),
+        ),
+      );
+    } else {
+      await into(scoresTable).insert(
+        ScoresTableCompanion.insert(
+          personID: personID,
+          careerGlobalScore: Value(points),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    }
+  }
 }
 
 // 4.1 ExternalWidgetsDAO
@@ -1018,6 +1038,21 @@ class GrowthDAO extends DatabaseAccessor<AppDatabase> with _$GrowthDAOMixin {
       into(goalsTable).insert(goal);
   Stream<List<GoalData>> watchGoals(int personId) =>
       (select(goalsTable)..where((t) => t.personID.equals(personId))).watch();
+
+  Future<void> updateGoalStatus(int goalID, String status) async {
+    await (update(goalsTable)..where((t) => t.goalID.equals(goalID))).write(
+      GoalsTableCompanion(
+        status: Value(status),
+        updatedAt: Value(DateTime.now()),
+        completionDate: status == 'done'
+            ? Value(DateTime.now())
+            : const Value.absent(),
+        progressPercentage: status == 'done'
+            ? const Value(100)
+            : const Value.absent(),
+      ),
+    );
+  }
 
   // Habits
   Future<int> createHabit(HabitsTableCompanion habit) =>

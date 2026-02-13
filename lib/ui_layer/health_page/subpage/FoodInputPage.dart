@@ -6,7 +6,7 @@ import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:ice_shield/initial_layer/Services/Health/AIFoodCaloriesServices.dart';
+import 'package:ice_shield/initial_layer/DuyLongServices/Health/AIFoodCaloriesServices.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:signals_flutter/signals_core.dart';
@@ -264,28 +264,29 @@ class _FoodInputPageState extends State<FoodInputPage> {
                     children: [
                       AutoSizeText(
                         'Today\'s Intake',
-                      style: textTheme.titleSmall,
-                      maxLines: 1,
-                    ),
-                    const SizedBox(height: 8),
-                    AutoSizeText(
-                      '$totalCalories kcal',
-                      style: textTheme.displayMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                        style: textTheme.titleSmall,
+                        maxLines: 1,
                       ),
-                      maxLines: 1,
-                    ),
-                    // AutoSizeText(
-                    //   'Goal: 2000 kcal',
-                    //   style: textTheme.bodySmall,
-                    //   maxLines: 1,
-                    // ),
-                  ],
+                      const SizedBox(height: 8),
+                      AutoSizeText(
+                        '$totalCalories kcal',
+                        style: textTheme.displayMedium?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                      ),
+                      // AutoSizeText(
+                      //   'Goal: 2000 kcal',
+                      //   style: textTheme.bodySmall,
+                      //   maxLines: 1,
+                      // ),
+                    ],
+                  ),
                 ),
               ),
-            )),
-            
+            ),
+
             const SizedBox(height: 24),
             AutoSizeText(
               'Recent Meals',

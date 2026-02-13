@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:ice_shield/initial_layer/DuyLongServices/Health/AIFoodCaloriesServices.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:ice_shield/initial_layer/Services/Health/AIFoodCaloriesServices.dart';
+// import 'package:ice_shield/initial_layer/Services/Health/AIFoodCaloriesServices.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:intl/intl.dart';
@@ -179,6 +180,14 @@ class _MealDialogContentState extends State<_MealDialogContent> {
                           title: const Text('Gallery'),
                           onTap: () {
                             _pickImage(ImageSource.gallery);
+                            Navigator.pop(bottomSheetContext);
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.photo_camera),
+                          title: const Text('Camera'),
+                          onTap: () {
+                            _pickImage(ImageSource.camera);
                             Navigator.pop(bottomSheetContext);
                           },
                         ),

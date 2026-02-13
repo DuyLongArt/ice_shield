@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/Protocol/Health/HealthMetricsData.dart';
 import 'package:ice_shield/initial_layer/FireAPI/UrlNavigate.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart'
+    show InternalWidgetBlock;
 // import 'package:ice_shield/initial_layer/FireAPI/UrlNavigate.dart' as WidgetNavigatorAction;
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
@@ -9,9 +11,9 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreData.d
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
 import 'package:ice_shield/orchestration_layer/Action/WebView/WebViewPage.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
 import 'package:ice_shield/data_layer/Protocol/Home/InternalWidgetProtocol.dart';
 import 'package:provider/provider.dart';
-import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 import 'package:ice_shield/security_routing_layer/Routing/navigate_route/WidgetNameMapping.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:go_router/go_router.dart';
@@ -58,6 +60,7 @@ class _HomePageState extends State<HomePage> {
   late Map<String, HealthMetric> healthMetricsData = {};
   late ScoreBlock scoreBlock;
   late ExternalWidgetBlock externalWidgetBlock;
+  late GrowthBlock growthBlock;
 
   @override
   void initState() {
@@ -69,6 +72,7 @@ class _HomePageState extends State<HomePage> {
     scoreBlock = context.read<ScoreBlock>();
     authBlock.fetchUser();
     personBlock = context.read<PersonBlock>();
+    growthBlock = context.read<GrowthBlock>();
     healthMetricsDAO = database.healthMetricsDAO;
 
     final jwtValue = authBlock.jwt.value;
@@ -197,15 +201,27 @@ class _HomePageState extends State<HomePage> {
                       '/social',
                       scoreBlock.score.socialGlobalScore,
                     ),
-                    _buildQuickAccessCard(
-                      context,
-                      'Projects',
-                      Icons.rocket_launch_rounded,
-                      Colors.orange,
-                      '4 active • 2 pending',
-                      '/projects',
-                      scoreBlock.score.careerGlobalScore,
-                    ),
+                    Watch((context) {
+                      final projectGoals = growthBlock.goals.value
+                          .where((g) => g.category == 'project')
+                          .toList();
+                      final activeCount = projectGoals
+                          .where((g) => g.status != 'done')
+                          .length;
+                      final doneCount = projectGoals
+                          .where((g) => g.status == 'done')
+                          .length;
+
+                      return _buildQuickAccessCard(
+                        context,
+                        'Projects',
+                        Icons.rocket_launch_rounded,
+                        Colors.orange,
+                        '$activeCount active • $doneCount done',
+                        '/projects',
+                        scoreBlock.score.careerGlobalScore,
+                      );
+                    }),
                   ],
                 ),
               ),

@@ -2,11 +2,7 @@
 import 'package:flutter/material.dart'; // Import standard Material
 import 'package:provider/provider.dart';
 
-// Assuming these imports are available in your project structure
 import 'package:ice_shield/data_layer/Protocol/Theme/ThemeAdapter.dart';
-// Assuming ThemeStore is available
-// import 'package:ice_shield/orchestration_layer/ActionFiles/Theme/ThemeStore.dart';
-// (Assuming ThemeStore is available and manages ThemeData)
 
 /// This widget asynchronously loads the initial Material theme data
 /// and makes the necessary providers (ThemeStore, etc.) available to the child widget.

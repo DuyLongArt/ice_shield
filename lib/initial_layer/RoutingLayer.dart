@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart'
     hide ThemeData;
 import 'package:ice_shield/initial_layer/DuyLongServices/CustomAuthService.dart';
-import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
+// import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidgetBlock.dart';
 import 'package:ice_shield/data_layer/Protocol/Theme/ThemeAdapter.dart';
+// import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 import 'package:provider/provider.dart';
+
+import '../orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 
 class Adapter extends StatefulWidget {
   final Widget childWidget;
@@ -88,8 +91,7 @@ class _adapterState extends State<Adapter> {
     return MultiProvider(
       providers: [
         Provider<InternalWidgetBlock>.value(value: internalWidgetBlock),
-
-      
+        Provider<ExternalWidgetBlock>.value(value: externalWidgetBlock),
 
         // 5. Provide the AuthBlock
         Provider<AuthBlock>.value(value: authBlock),

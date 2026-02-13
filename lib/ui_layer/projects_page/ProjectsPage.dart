@@ -5,6 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/ui_layer/projects_page/TextEditorPage.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'TaskItem.dart';
 import 'CreateProjectDialog.dart';
 
 class ProjectsPage extends StatelessWidget {
@@ -28,15 +32,18 @@ class ProjectsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final growthBlock = context.watch<GrowthBlock>();
+    final scoreBlock = context.read<ScoreBlock>();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(
-          'Projects',
+          'Project Hub',
           style: TextStyle(
             color: colorScheme.onSurface,
             fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
           ),
         ),
         centerTitle: false,
@@ -44,20 +51,21 @@ class ProjectsPage extends StatelessWidget {
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: colorScheme.onSurface),
-            onPressed: () {},
+            icon: Icon(Icons.add_task, color: colorScheme.primary),
+            onPressed: () => _showAddTaskDialog(context, growthBlock),
           ),
           IconButton(
-            icon: Icon(Icons.more_vert, color: colorScheme.onSurface),
+            icon: Icon(Icons.search, color: colorScheme.onSurface),
             onPressed: () {},
           ),
         ],
       ),
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -67,7 +75,7 @@ class ProjectsPage extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _ActionCard(
-                          icon: Icons.note_add_outlined,
+                          icon: Icons.note_add_rounded,
                           label: 'New Note',
                           color: Colors.orange,
                           onTap: () {
@@ -80,24 +88,95 @@ class ProjectsPage extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: _ActionCard(
-                          icon: Icons.library_books_outlined,
-                          label: 'All Notes',
+                          icon: Icons.library_books_rounded,
+                          label: 'Archive',
                           color: Colors.blue,
                           onTap: () {
                             context.go("/project_notes");
                           },
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionCard(
+                          icon: Icons.auto_graph_rounded,
+                          label: 'Stats',
+                          color: Colors.purple,
+                          onTap: () {},
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 32),
-                  _buildSectionTitle(context, 'Recent Notes'),
-                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildSectionTitle(context, 'Active Tasks'),
+                      TextButton(
+                        onPressed: () =>
+                            _showAddTaskDialog(context, growthBlock),
+                        child: const Text('Add Task'),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+            ),
+          ),
+          Watch((context) {
+            final tasks = growthBlock.goals.value
+                .where((g) => g.category == 'project' && g.status != 'done')
+                .toList();
+
+            if (tasks.isEmpty) {
+              return const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: _EmptyState(
+                    icon: Icons.task_alt,
+                    message: 'All caught up! Add a task to stay productive.',
+                  ),
+                ),
+              );
+            }
+
+            return SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final task = tasks[index];
+                  return TaskItem(
+                    task: task,
+                    onComplete: () async {
+                      await growthBlock.completeGoal(task.goalID);
+                      // Award points persistently
+                      await scoreBlock.persistentCareerIncrement(2);
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text(
+                              'Task complete! +2 Project XP Awarded 🚀',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            duration: const Duration(seconds: 1),
+                            backgroundColor: colorScheme.primary,
+                          ),
+                        );
+                      }
+                    },
+                  );
+                }, childCount: tasks.length),
+              ),
+            );
+          }),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 16),
+              child: _buildSectionTitle(context, 'Recent Notes'),
             ),
           ),
           StreamBuilder<List<ProjectNoteData>>(
@@ -148,33 +227,33 @@ class ProjectsPage extends StatelessWidget {
               );
             },
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 32),
-                  _buildSectionTitle(context, 'Active Projects'),
-                  const SizedBox(height: 16),
-                  _ProjectCard(
-                    title: 'Mobile App Redesign',
-                    progress: 0.75,
-                    dueDate: 'Due in 3 days',
-                    color: Colors.purple,
-                  ),
-                  const SizedBox(height: 16),
-                  _ProjectCard(
-                    title: 'Backend Migration',
-                    progress: 0.3,
-                    dueDate: 'Due in 2 weeks',
-                    color: Colors.teal,
-                  ),
-                  const SizedBox(height: 80), // Bottom padding
-                ],
-              ),
-            ),
-          ),
+          // SliverToBoxAdapter(
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(16.0),
+          //     child: Column(
+          //       crossAxisAlignment: CrossAxisAlignment.start,
+          //       children: [
+          //         const SizedBox(height: 32),
+          //         _buildSectionTitle(context, 'Active Projects'),
+          //         const SizedBox(height: 16),
+          //         _ProjectCard(
+          //           title: 'Mobile App Redesign',
+          //           progress: 0.75,
+          //           dueDate: 'Due in 3 days',
+          //           color: Colors.purple,
+          //         ),
+          //         const SizedBox(height: 16),
+          //         _ProjectCard(
+          //           title: 'Backend Migration',
+          //           progress: 0.3,
+          //           dueDate: 'Due in 2 weeks',
+          //           color: Colors.teal,
+          //         ),
+          //         const SizedBox(height: 80), // Bottom padding
+          //       ],
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -184,9 +263,95 @@ class ProjectsPage extends StatelessWidget {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
         color: Theme.of(context).colorScheme.onSurface,
+        letterSpacing: -0.2,
+      ),
+    );
+  }
+
+  void _showAddTaskDialog(BuildContext context, GrowthBlock growthBlock) {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Task'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'Task Title',
+                hintText: 'What needs to be done?',
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                hintText: 'Add some details...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (titleController.text.isNotEmpty) {
+                await growthBlock.createNewTask(
+                  titleController.text,
+                  descController.text,
+                );
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Add Task'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String message;
+
+  const _EmptyState({required this.icon, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.05)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 48, color: colorScheme.primary.withOpacity(0.2)),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colorScheme.onSurface.withOpacity(0.5),
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }

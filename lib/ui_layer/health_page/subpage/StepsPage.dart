@@ -223,18 +223,7 @@ class _StepsPageState extends State<StepsPage> {
             const SizedBox(height: 24),
 
             // Add Steps Section
-            Card(
-              elevation: 4.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start),
-              ),
-            ),
-            const SizedBox(height: 16),
-
+           
             // Reset Button
           ],
         ),

@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:ice_shield/initial_layer/FireAPI/AI/GeminiAPI.dart';
-import 'package:ice_shield/initial_layer/Services/HumanEvaluation.dart';
+// import 'package:ice_shield/initial_layer/DuyLongServices/GeminiAPI.dart';
+import 'package:ice_shield/initial_layer/DuyLongServices/HumanEvaluation.dart';
 // import 'package:ice_shield/initial_layer/Services/PersonHealthEvaluation.dart';
 
 // Standard Dart naming convention uses snake_case for file names
@@ -29,10 +29,10 @@ abstract class TargetCaloriesProtocol with _$TargetCaloriesProtocol {
     );
   }
   factory TargetCaloriesProtocol.fromEvaluation(HumanInputValues inputValues) {
-    HumanEvaluateService humanEvaluateService = HumanEvaluateService();
-
-    HumanTargetValues humanTargetValues = humanEvaluateService.evaluate(
-      inputValues,
+    HumanTargetValues humanTargetValues = HumanTargetValues.fromEvaluation(
+      bodyMetrics: inputValues.humanBodyMetrics,
+      bloodMetrics: inputValues.bloodTestMetrics,
+      calories: inputValues.caloriesProtocol,
     );
 
     return TargetCaloriesProtocol(

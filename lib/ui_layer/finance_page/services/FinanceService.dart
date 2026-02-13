@@ -117,7 +117,7 @@ class FinanceService {
 
   static Future<FinanceAsset> fetchVnStock(String ticker) async {
     final url = Uri.parse(
-      'https://apipublish.tcbs.com.vn/trading/v1/stock/stats/$ticker',
+      'https://tcinvest.tcbs.com.vn/v1/stock/stats/$ticker',
     );
     try {
       final response = await http.get(url);
