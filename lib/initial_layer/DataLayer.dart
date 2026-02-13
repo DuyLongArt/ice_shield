@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/DataSeeder.dart';
@@ -11,8 +14,13 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.da
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/ContentBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/WidgetSettingsBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/ObjectDatabaseBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
+import 'package:pedometer/pedometer.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -51,13 +59,49 @@ class _DataLayerState extends State<DataLayer> {
   late PersonBlock personBlock;
   late AuthBlock authBlock;
   late ObjectDatabaseBlock objectDatabaseBlock;
+  late ScoreBlock scoreBlock;
+  late WidgetManagerBlock widgetManagerBlock;
+
+  late Stream<StepCount> _stepCountStream;
+  late Stream<PedestrianStatus> _pedestrianStatusStream;
+
+  late HealthMetricsDAO healthMetricsDAO;
+  late StreamSubscription<StepCount> _stepSubscription;
+  int currentSteps = 0;
 
   @override
   void initState() {
     super.initState();
 
     // 1. Keep initState() synchronous.
+    initPedometer();
+
     _initializeData();
+  }
+
+  void initPedometer() {
+    _stepCountStream = Pedometer.stepCountStream;
+
+    _stepSubscription = _stepCountStream.listen(
+      _onStepCount,
+      onError: _onStepCountError,
+    );
+  }
+
+  void _onStepCount(StepCount event) {
+    debugPrint("Sensor updated: ${event.steps}");
+
+    setState(() {
+      // Note: event.steps is total steps since last phone reboot
+      currentSteps = event.steps;
+    });
+
+    // Automatically update your database score
+    // _updateDatabaseScore(event.steps);
+  }
+
+  void _onStepCountError(error) {
+    debugPrint("Pedometer Error: $error");
   }
 
   // 2. Create an async helper function to perform setup.
@@ -78,9 +122,30 @@ class _DataLayerState extends State<DataLayer> {
         sessionDao:
             widget.database.sessionDAO, // Assuming sessionDAO is available
       );
+      healthMetricsDAO = widget.database.healthMetricsDAO;
+
+      // int steps = 0;3
+
+      DateTime now = DateTime.now();
+      print("currentSteps: $currentSteps");
+      healthMetricsDAO.insertOrUpdateMetrics(
+        HealthMetricsTableCompanion(
+          steps: Value(currentSteps),
+          date: Value(now),
+        ),
+      );
+
+      // widget.database.scoreDAO.insertOrUpdateScore(ScoreLocalData(personID: 1, healthGlobalScore: 0, socialGlobalScore: 0, financialGlobalScore: 0, careerGlobalScore: 0, createdAt: DateTime.now(), updatedAt: DateTime.now(), scoreID: 1));
 
       // Initialize ObjectDatabaseBlock
       objectDatabaseBlock = ObjectDatabaseBlock();
+
+      widgetManagerBlock = WidgetManagerBlock(
+        widgetDao: widget.database.widgetDAO,
+        personIdSignal: computed(
+          () => personBlock.information.value.profiles.id,
+        ),
+      );
 
       // Check session immediately on startup
       authBlock.checkSession(context);
@@ -173,6 +238,9 @@ class _DataLayerState extends State<DataLayer> {
         Provider<ProjectNoteDAO>(
           create: (context) => widget.database.projectNoteDAO,
         ),
+        Provider<InternalWidgetsDAO>(
+          create: (context) => widget.database.internalWidgetsDAO,
+        ),
 
         // 3. StreamProvider to watch the live list of data. (For READ operations)
         StreamProvider<List<ExternalWidgetData>>(
@@ -193,6 +261,11 @@ class _DataLayerState extends State<DataLayer> {
         Provider<GrowthDAO>(create: (_) => widget.database.growthDAO),
         Provider<ContentDAO>(create: (_) => widget.database.contentDAO),
         Provider<WidgetDAO>(create: (_) => widget.database.widgetDAO),
+        Provider<HealthMetricsDAO>(
+          create: (_) => widget.database.healthMetricsDAO,
+        ),
+        Provider<ProjectsDAO>(create: (_) => widget.database.projectsDAO),
+        Provider<ScoreDAO>(create: (_) => widget.database.scoreDAO),
 
         // --- NEW: Reactive Blocks ---
         // PersonBlock (Load user ID 1 by default)
@@ -234,6 +307,13 @@ class _DataLayerState extends State<DataLayer> {
           create: (_) => ScoreBlock()..init(widget.database.scoreDAO, 1),
           dispose: (_, block) => block.dispose(),
         ),
+        Provider<ProjectBlock>(
+          create: (_) => ProjectBlock()..init(widget.database.projectsDAO, 1),
+          dispose: (_, block) => block.dispose(),
+        ),
+        Provider<InternalWidgetBlock>(create: (_) => InternalWidgetBlock()),
+        Provider<ExternalWidgetBlock>(create: (_) => ExternalWidgetBlock()),
+        Provider<WidgetManagerBlock>(create: (_) => widgetManagerBlock),
       ],
       // Use MaterialApp as the child and WidgetConsumer as the home screen.
       child: widget.childWidget,

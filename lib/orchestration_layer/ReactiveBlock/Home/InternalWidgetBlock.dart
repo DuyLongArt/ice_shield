@@ -34,4 +34,16 @@ class InternalWidgetBlock {
       updateListBlockFromDatabase(protocolData);
     });
   }
+
+  Future<void> deleteWidget(InternalWidgetsDAO dao, String name) async {
+    await dao.deleteInternalWidget(name);
+  }
+
+  Future<void> renameWidget(
+    InternalWidgetsDAO dao,
+    String oldName,
+    String newName,
+  ) async {
+    await dao.renameInternalWidget(oldName, newName);
+  }
 }

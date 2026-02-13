@@ -14,6 +14,8 @@ import '../widget_page/AddPluginForm.dart';
 // import '../WidgetCard.dart'; // We will use BuildCard exclusively for the store to ensure consistent dragging size
 
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import '../finance_page/services/FinanceService.dart';
 
 class StoreWidget extends StatelessWidget {
   const StoreWidget({super.key});
@@ -70,6 +72,16 @@ class StoreWidget extends StatelessWidget {
         dateAdded: DateTime.now().toIso8601String(),
         widgetID: 105,
         score: 20,
+      ),
+      InternalWidgetDragProtocol.item(
+        name: "Finance",
+        color: "0xFF2196F3",
+        url: '/finance',
+        imageUrl: '',
+        alias: 'finance',
+        dateAdded: DateTime.now().toIso8601String(),
+        widgetID: 106,
+        score: 100,
       ),
     ];
   }
@@ -252,7 +264,7 @@ class BuildCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _getColor(item.color);
-    final isIconOnly = item.alias != 'plugin';
+    final isIconOnly = item.alias != 'plugin' && item.alias != 'finance';
 
     return Hero(
       tag: 'widget_${item.widgetID}_${item.name}',
@@ -298,7 +310,9 @@ class BuildCard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (isIconOnly)
+                if (item.alias == 'finance')
+                  _buildFinanceContent()
+                else if (isIconOnly)
                   Icon(_getIcon(item.alias), color: Colors.white, size: 28)
                 else
                   _buildFavicon(),
@@ -358,6 +372,33 @@ class BuildCard extends StatelessWidget {
               const Icon(Icons.public_rounded, color: Colors.white, size: 20),
         ),
       ),
+    );
+  }
+
+  Widget _buildFinanceContent() {
+    final balance = FinanceService.getTotalBalance();
+    final formatter = NumberFormat.compactCurrency(symbol: '\$');
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.account_balance_wallet_rounded,
+          color: Colors.white,
+          size: 22,
+        ),
+        const SizedBox(height: 4),
+        FittedBox(
+          child: Text(
+            formatter.format(balance),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -65,6 +65,10 @@ class MainShell extends StatelessWidget {
         pageIcon = SocialPage.icon(context, size: responsiveSize);
         break;
       case '/projects':
+        pageIcon = ProjectsPage.icon(context, size: responsiveSize);
+        break;
+      case '/projects/editor':
+        return const SizedBox.shrink();
       case '/personal-info':
         pageIcon = PersonalInformationPage.icon(context, size: responsiveSize);
         break;
@@ -91,7 +95,10 @@ class MainShell extends StatelessWidget {
     return Scaffold(
       // --- PERSISTENT APP BAR ---
       appBar: AppBar(
-        title: const Text("ICE Shield", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "ICE Shield",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
         actions: [
           // 1. Navigate to Home
@@ -119,7 +126,7 @@ class MainShell extends StatelessWidget {
 
       // --- DYNAMIC BODY (Changes based on route) ---
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(bottom: 10.0, top: 10),
+        padding: const EdgeInsets.only(bottom: 20.0, top: 10),
         child: _getMainButtonForRoute(context, currentRoute),
       ),
 

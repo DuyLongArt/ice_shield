@@ -109,7 +109,7 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
                           isDragging: true,
                           cardWidth: widget.widthCard,
                           cardHeight: widget.heightCard,
-                          name: widget.name,
+                          name: cellData.name,
                         ),
                       ),
                     ),
@@ -119,7 +119,7 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
                         item: cellData,
                         cardWidth: widget.widthCard,
                         cardHeight: widget.heightCard,
-                        name: widget.name,
+                        name: cellData.name,
                       ),
                     ),
                     child: Stack(
@@ -129,7 +129,38 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
                           item: cellData,
                           cardWidth: widget.widthCard,
                           cardHeight: widget.heightCard,
-                          name: widget.name,
+                          name: cellData.name,
+                        ),
+                        Positioned(
+                          top: -8,
+                          left: -8,
+                          child: InkWell(
+                            onTap: () =>
+                                _showRenameDialog(context, cellData.name),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.edit_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
                         Positioned(
                           top: -8,
@@ -169,5 +200,40 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
         },
       );
     });
+  }
+
+  void _showRenameDialog(BuildContext context, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Rename Widget'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'New Name',
+              hintText: 'Enter widget name',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  widget.store.renameWidget(widget.index, controller.text);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Rename'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

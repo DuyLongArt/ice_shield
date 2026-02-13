@@ -1,19 +1,11 @@
-// Required for ImageFilter
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:ice_shield/ui_layer/widget_page/AddPluginForm.dart';
-import 'package:ice_shield/ui_layer/widget_page/WidgetPage.dart';
 import 'package:provider/provider.dart';
-
-// --- IMPORTS ---
-// 1. The Data Protocol
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
-import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'InternalDragIconWidget.dart'; // The Grid Cell
 import 'StoreWidget.dart'; // The Bottom Bar
 
@@ -23,7 +15,6 @@ void buildAddCell(BuildContext context) {
   showDialog(
     context: context,
     builder: (context) => Dialog(
-      // backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16),
       child: AddPluginForm(
         data: FormData(
@@ -38,13 +29,21 @@ void buildAddCell(BuildContext context) {
 class DragCanvasGrid extends StatefulWidget {
   const DragCanvasGrid({super.key});
 
+  // Global signal for store state to fix accessibility and static context issues
+  static final isOpenStore = signal<bool>(false);
+
+  static void toggleStore() {
+    print("Toggle store");
+    isOpenStore.value = !isOpenStore.value;
+  }
+
   static Widget icon(BuildContext context, {double? size}) {
     return MainButton(
       type: "grid",
       destination: "/canvas",
       size: size,
-      icon: Icons.add,
-      mainFunction: () => buildAddCell(context),
+      icon: Icons.grid_view,
+      mainFunction: toggleStore,
     );
   }
 
@@ -53,26 +52,13 @@ class DragCanvasGrid extends StatefulWidget {
 }
 
 class _DragCanvasGridState extends State<DragCanvasGrid> {
-  late final ReadonlySignal<int?> personIdSignal;
-  late final WidgetManagerBlock widgetManagerBlock;
-
   @override
   void initState() {
     super.initState();
-    final personBlock = context.read<PersonBlock>();
-    final widgetDao = context.read<WidgetDAO>();
-
-    personIdSignal = computed(() => personBlock.information.value.profiles.id);
-
-    widgetManagerBlock = WidgetManagerBlock(
-      widgetDao: widgetDao,
-      personIdSignal: personIdSignal,
-    );
   }
 
   @override
   void dispose() {
-    widgetManagerBlock.dispose();
     super.dispose();
   }
 
@@ -82,14 +68,11 @@ class _DragCanvasGridState extends State<DragCanvasGrid> {
     final baseColor = colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Provider<WidgetManagerBlock>.value(
-      value: widgetManagerBlock,
-      child: Scaffold(
-        backgroundColor: baseColor,
-        body: SafeArea(
-          bottom: false,
-          child: DragCanvas(baseColor: baseColor, isDark: isDark),
-        ),
+    return Scaffold(
+      backgroundColor: baseColor,
+      body: SafeArea(
+        bottom: false,
+        child: DragCanvas(baseColor: baseColor, isDark: isDark),
       ),
     );
   }
@@ -107,27 +90,22 @@ class DragCanvas extends StatefulWidget {
 
 class _DragCanvasState extends State<DragCanvas> {
   bool isClick = false;
-  // late WidgetManagerBlock widgetBlock;
 
   @override
   void initState() {
     super.initState();
-    // Chạy sau khi build xong để tránh SignalEffectException
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<WidgetManagerBlock>().loadFromDatabase();
-      print("======================");
-      print(context.read<WidgetManagerBlock>().widgets);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // listen: false vì chúng ta đã dùng Watch để quản lý các phần thay đổi
     final widgetBlock = Provider.of<WidgetManagerBlock>(context, listen: false);
+
     return Column(
       children: [
         const SizedBox(height: 12),
-        // DYNAMIC ISLAND
         Center(
           child: Container(
             width: 140,
@@ -166,18 +144,15 @@ class _DragCanvasState extends State<DragCanvas> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
-                    fontWeight: FontWeight.bold
+                    fontWeight: FontWeight.bold,
                   ),
-                 
                 ),
-                // WidgetPage.icon(),
               ],
             ),
           ),
         ),
         const SizedBox(height: 10),
 
-        // MAIN GRID (iPhone 16 Proportions)
         Expanded(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
@@ -245,10 +220,24 @@ class _DragCanvasState extends State<DragCanvas> {
           ),
         ),
 
-        // LIBRARY / STORE
-        // const Padding(padding: EdgeInsets.symmetric(vertical: 16)),
-        const SizedBox(height: 2),
-        const StoreWidget(),
+        Watch((context) {
+          final isStoreOpen = DragCanvasGrid.isOpenStore.value;
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) {
+              return SlideTransition(
+                position: animation.drive(
+                  Tween(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).chain(CurveTween(curve: Curves.easeOutCubic)),
+                ),
+                child: child,
+              );
+            },
+            child: isStoreOpen ? const StoreWidget() : const SizedBox.shrink(),
+          );
+        }),
       ],
     );
   }

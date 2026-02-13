@@ -17,7 +17,7 @@ class _SleepPageState extends State<SleepPage> {
       (sleepHours / recommendedSleep * 100).clamp(0, 100);
   double get sleepDeficit =>
       (recommendedSleep - sleepHours).clamp(0, recommendedSleep);
-  int get sleepCycles => (sleepHours / 1.5).floor(); // 1 sleep cycle ≈ 90 min
+  int get sleepCycles => (sleepHours / 1.5).floor();
 
   String get sleepRating {
     if (sleepHours >= 8) return 'Excellent';
@@ -63,13 +63,14 @@ class _SleepPageState extends State<SleepPage> {
     double bedMinutes = (bedTime.hour * 60 + bedTime.minute).toDouble();
     double wakeMinutes = (wakeTime.hour * 60 + wakeTime.minute).toDouble();
 
-    // Handle overnight sleep
     if (wakeMinutes < bedMinutes) {
       wakeMinutes += 24 * 60;
     }
 
     double totalMinutes = wakeMinutes - bedMinutes;
-    sleepHours = totalMinutes / 60;
+    setState(() {
+      sleepHours = totalMinutes / 60;
+    });
   }
 
   @override
@@ -79,242 +80,289 @@ class _SleepPageState extends State<SleepPage> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: Text(
-          'Sleep Tracker',
-          style: textTheme.titleLarge?.copyWith(
-            color: colorScheme.onPrimary,
-            fontWeight: FontWeight.bold,
+      body: Stack(
+        children: [
+          // Night Sky Decoration
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Icon(
+              Icons.nightlight_round_rounded,
+              color: colorScheme.secondary.withValues(alpha: 0.1),
+              size: 300,
+            ),
           ),
-        ),
-        centerTitle: true,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Main Sleep Display Card
-            Card(
-              elevation: 8.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.0),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    Icon(Icons.bedtime, color: colorScheme.secondary, size: 64),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Last Night\'s Sleep',
-                      style: textTheme.titleMedium?.copyWith(
-                        color: colorScheme.secondary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          sleepHours.toStringAsFixed(1),
-                          style: textTheme.displayLarge?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      Text(
+                        'Sleep Analysis',
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'hours',
-                          style: textTheme.titleLarge?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
                       ),
+                      const SizedBox(width: 40),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Main Sleep Display
+                  Center(
+                    child: Container(
+                      width: double.infinity,
                       decoration: BoxDecoration(
-                        color: ratingColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: ratingColor, width: 2),
-                      ),
-                      child: Text(
-                        sleepRating,
-                        style: textTheme.titleMedium?.copyWith(
-                          color: ratingColor,
-                          fontWeight: FontWeight.bold,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            colorScheme.primaryContainer,
+                            colorScheme.surface,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Sleep Quality Progress
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: sleepQuality / 100,
-                        minHeight: 12,
-                        backgroundColor: colorScheme.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation<Color>(ratingColor),
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.bedtime_rounded,
+                            color: colorScheme.primary,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Duration',
+                            style: textTheme.labelLarge?.copyWith(
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                sleepHours.toStringAsFixed(1),
+                                style: textTheme.displayLarge?.copyWith(
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 64,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'hrs',
+                                style: textTheme.titleLarge?.copyWith(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ratingColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              sleepRating.toUpperCase(),
+                              style: textTheme.titleSmall?.copyWith(
+                                color: ratingColor,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          LinearProgressIndicator(
+                            value: sleepQuality / 100,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              ratingColor,
+                            ),
+                            minHeight: 8,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '${sleepQuality.toStringAsFixed(0)}% of goal reached',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${sleepQuality.toStringAsFixed(0)}% of recommended sleep',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
+                  ),
 
-            // Sleep Schedule
-            Card(
-              elevation: 4.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Sleep Schedule',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 30),
+
+                  // Schedule Section
+                  Text(
+                    'Schedule',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _modernTimeCard(
+                          context,
+                          'Bedtime',
+                          bedTime,
+                          Icons.nightlight_round,
+                          _selectBedTime,
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: _modernTimeCard(
+                          context,
+                          'Wake up',
+                          wakeTime,
+                          Icons.wb_sunny_rounded,
+                          _selectWakeTime,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Statistics Grid
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cardWidth = (constraints.maxWidth - 15) / 2;
+                      return Wrap(
+                        spacing: 15,
+                        runSpacing: 15,
+                        children: [
+                          _statCard(
+                            context,
+                            'Cycles',
+                            sleepCycles.toString(),
+                            '90m/c',
+                            Icons.refresh_rounded,
+                            cardWidth,
+                          ),
+                          _statCard(
+                            context,
+                            'Deficit',
+                            sleepDeficit.toStringAsFixed(1),
+                            'hrs',
+                            Icons.trending_down_rounded,
+                            cardWidth,
+                          ),
+                          _statCard(
+                            context,
+                            'Deep',
+                            (sleepHours * 0.25).toStringAsFixed(1),
+                            'hrs',
+                            Icons.dark_mode_rounded,
+                            cardWidth,
+                          ),
+                          _statCard(
+                            context,
+                            'REM',
+                            (sleepHours * 0.20).toStringAsFixed(1),
+                            'hrs',
+                            Icons.psychology_rounded,
+                            cardWidth,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Tips
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainer.withValues(
+                        alpha: 0.5,
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.2,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _buildTimeSelector(
-                            context,
-                            'Bedtime',
-                            bedTime,
-                            Icons.nightlight_round,
-                            _selectBedTime,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.lightbulb_outline_rounded,
+                              color: colorScheme.primary,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Sleep Tips',
+                              style: textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildTimeSelector(
-                            context,
-                            'Wake Up',
-                            wakeTime,
-                            Icons.wb_sunny,
-                            _selectWakeTime,
-                          ),
-                        ),
+                        const SizedBox(height: 15),
+                        _buildTip(context, 'Maintain a consistent schedule'),
+                        _buildTip(context, 'Avoid caffeine before bed'),
+                        _buildTip(context, 'Keep room cool and dark'),
+                        _buildTip(context, 'No screens 30m before sleep'),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Statistics
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Sleep Cycles',
-                    sleepCycles.toString(),
-                    'cycles',
-                    Icons.loop,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Sleep Deficit',
-                    sleepDeficit.toStringAsFixed(1),
-                    'hours',
-                    Icons.trending_down,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Deep Sleep',
-                    (sleepHours * 0.25).toStringAsFixed(1),
-                    'hours',
-                    Icons.dark_mode,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'REM Sleep',
-                    (sleepHours * 0.20).toStringAsFixed(1),
-                    'hours',
-                    Icons.psychology,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Sleep Tips
-            Card(
-              elevation: 4.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.lightbulb, color: colorScheme.secondary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Sleep Tips',
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTip('Maintain a consistent sleep schedule'),
-                    _buildTip('Avoid caffeine 6 hours before bed'),
-                    _buildTip('Keep your bedroom cool and dark'),
-                    _buildTip('Limit screen time before sleep'),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTimeSelector(
+  Widget _modernTimeCard(
     BuildContext context,
     String label,
     TimeOfDay time,
@@ -326,23 +374,25 @@ class _SleepPageState extends State<SleepPage> {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          border: Border.all(color: colorScheme.outline),
-          borderRadius: BorderRadius.circular(12),
+          color: colorScheme.surfaceContainer.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
         ),
         child: Column(
           children: [
-            Icon(icon, color: colorScheme.secondary),
+            Icon(icon, color: colorScheme.primary, size: 24),
             const SizedBox(height: 8),
-            Text(label, style: textTheme.bodySmall),
+            Text(label, style: textTheme.labelSmall),
             const SizedBox(height: 4),
             Text(
               time.format(context),
               style: textTheme.titleLarge?.copyWith(
-                color: colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -352,62 +402,63 @@ class _SleepPageState extends State<SleepPage> {
     );
   }
 
-  Widget _buildStatCard(
+  Widget _statCard(
     BuildContext context,
     String label,
     String value,
     String unit,
     IconData icon,
+    double width,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 4.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, color: colorScheme.secondary, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: textTheme.titleLarge?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              unit,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ],
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: colorScheme.primary, size: 20),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            '$label ($unit)',
+            style: textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTip(String tip) {
+  Widget _buildTip(BuildContext context, String tip) {
+    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle, size: 20, color: Colors.green),
-          const SizedBox(width: 8),
+          Icon(
+            Icons.check_circle_outline_rounded,
+            size: 20,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
           Expanded(child: Text(tip, style: textTheme.bodyMedium)),
         ],
       ),

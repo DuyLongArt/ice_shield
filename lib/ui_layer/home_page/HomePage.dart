@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/Protocol/Health/HealthMetricsData.dart';
-import 'package:ice_shield/initial_layer/FireAPI/UrlNavigate.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart'
     show InternalWidgetBlock;
 // import 'package:ice_shield/initial_layer/FireAPI/UrlNavigate.dart' as WidgetNavigatorAction;
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
-import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreData.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
 import 'package:ice_shield/orchestration_layer/Action/WebView/WebViewPage.dart';
+import 'package:pedometer/pedometer.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
 import 'package:ice_shield/data_layer/Protocol/Home/InternalWidgetProtocol.dart';
 import 'package:provider/provider.dart';
-import 'package:ice_shield/security_routing_layer/Routing/navigate_route/WidgetNameMapping.dart';
-import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart'
+    hide ThemeData;
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:ice_shield/ui_layer/widget_page/AddPluginForm.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/Action/WidgetNavigator.dart';
+import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
+import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
+import 'package:ice_shield/ui_layer/projects_page/CreateProjectDialog.dart';
+import 'package:ice_shield/ui_layer/projects_page/TextEditorPage.dart';
 
 class HomePage extends StatefulWidget {
   final String title;
@@ -34,6 +37,43 @@ class HomePage extends StatefulWidget {
       size: size,
       mainFunction: () => context.go("/"),
       icon: Icons.ac_unit,
+      doubleClickFunction: () {
+        print("double click");
+        context.pop();
+      },
+      subButtons: [
+        SubButton(
+          icon: Icons.create_new_folder_rounded,
+          backgroundColor: Colors.deepPurple,
+          tooltip: "New Project",
+          label: "Project",
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => const CreateProjectDialog(),
+            );
+          },
+        ),
+        SubButton(
+          icon: Icons.folder_open_rounded,
+          backgroundColor: Colors.blueAccent,
+          tooltip: "View Projects",
+          label: "Projects",
+          onPressed: () => context.go('/projects'),
+        ),
+        SubButton(
+          icon: Icons.note_add_rounded,
+          backgroundColor: Colors.orange,
+          tooltip: "New Note",
+          label: "Note",
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TextEditorPage()),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -44,6 +84,10 @@ class HomePage extends StatefulWidget {
       size: size,
       mainFunction: () => context.go("/"),
       icon: Icons.ac_unit,
+      doubleClickFunction: () {
+        print("double click");
+        context.pop();
+      },
     );
   }
 
@@ -52,6 +96,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _isEditMode = false;
   late AppDatabase database;
   late InternalWidgetBlock internalWidgetBlock;
   late AuthBlock authBlock;
@@ -62,9 +107,15 @@ class _HomePageState extends State<HomePage> {
   late ExternalWidgetBlock externalWidgetBlock;
   late GrowthBlock growthBlock;
 
+  late Stream<StepCount> _stepCountStream;
+  late Stream<PedestrianStatus> _pedestrianStatusStream;
+  int currentSteps = 0;
+  late double sizeOfWidget;
+
   @override
   void initState() {
     super.initState();
+
     database = context.read<AppDatabase>();
     internalWidgetBlock = context.read<InternalWidgetBlock>();
     externalWidgetBlock = context.read<ExternalWidgetBlock>();
@@ -75,6 +126,39 @@ class _HomePageState extends State<HomePage> {
     growthBlock = context.read<GrowthBlock>();
     healthMetricsDAO = database.healthMetricsDAO;
 
+    // initPlatformState();
+    // initPlatformState();
+
+    void onPedestrianStatusUpdate(PedestrianStatus event) {
+      print(event);
+      setState(() {
+        // You can create a String variable 'status' to display this in the UI
+        // String status = event.status;
+        print("status step: ${event.status}");
+      });
+    }
+
+    // 3. Error handling is required by the Pedometer plugin
+    void onPedestrianStatusError(error) {
+      print('Pedestrian Status Error: $error');
+    }
+
+    void onStepCountError(error) {
+      print('Step Count Error: $error');
+    }
+
+    void initPlatformState() {
+      // Listen to step counts
+      _stepCountStream = Pedometer.stepCountStream;
+      _stepCountStream.listen(onStepCount).onError(onStepCountError);
+
+      // Listen to status (walking, stopped, etc.)
+      _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
+      _pedestrianStatusStream
+          .listen(onPedestrianStatusUpdate)
+          .onError(onPedestrianStatusError);
+    }
+
     final jwtValue = authBlock.jwt.value;
     if (jwtValue != null) {
       personBlock.fetchFromDatabase(jwtValue);
@@ -83,6 +167,16 @@ class _HomePageState extends State<HomePage> {
     Future.microtask(() {
       internalWidgetBlock.refreshBlock(database.internalWidgetsDAO);
       externalWidgetBlock.refreshBlock(database.externalWidgetsDAO);
+
+      // Fetch steps from Apple Health
+      HealthService.fetchStepCount().then((steps) {
+        if (mounted) {
+          setState(() {
+            currentSteps = steps;
+          });
+        }
+      });
+
       HealthMetricsData.getMetricsByDay(DateTime.now(), context).then((
         newData,
       ) {
@@ -95,8 +189,16 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void onStepCount(StepCount event) {
+    print(event);
+    setState(() {
+      currentSteps = event.steps;
+    });
+  }
+
+  // 1. Handles the actual step count data
   void _navigateInternalUrl(String name) {
-    context.go('/$name');
+    context.push('$name');
   }
 
   void _showAddPluginDialog(BuildContext context) {
@@ -119,231 +221,255 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: AutoSizeText(
-          widget.title,
-          style: textTheme.titleLarge?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
-          maxLines: 1,
-        ),
-        centerTitle: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: CircleAvatar(
-              backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
-              child: Icon(
-                Icons.person_outline,
-                color: colorScheme.primary,
-                size: 20,
+      sizeOfWidget=MediaQuery.of(context).size.width*0.25;
+    sizeOfWidget=sizeOfWidget.clamp(100, 120);
+    return SwipeablePage(
+      onSwipe: () => Navigator.maybePop(context), // Use maybePop for safety
+      direction: SwipeablePageDirection.leftToRight,
+      child: Scaffold(
+        backgroundColor: colorScheme.surface,
+        appBar: AppBar(
+          title: SwipeablePage(
+            onSwipe: () => context.pop(),
+            child: AutoSizeText(
+              widget.title,
+              style: textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
               ),
+              maxLines: 1,
             ),
-            onPressed: () => context.go('/profile'),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Watch((context) {
-        final internalWidgets =
-            internalWidgetBlock.listInternalWidgetHomePage.value;
-        final externalWidgets = externalWidgetBlock.listExternalWidgets.value;
-
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- SECTION: GAMIFIED HEADER ---
-              _buildGamifiedHeader(context),
-              const SizedBox(height: 24),
-
-              // --- SECTION: LIFE DASHBOARD ---
-              _buildSectionHeader(context, 'Life Dashboard', '/profile'),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 180,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    _buildQuickAccessCard(
-                      context,
-                      'Health',
-                      Icons.favorite_rounded,
-                      Colors.green,
-                      '${healthMetricsData['steps']?.value ?? 0} steps • ${healthMetricsData['food']?.value ?? 0} kcal',
-                      '/health',
-                      scoreBlock.score.healthGlobalScore,
-                    ),
-                    _buildQuickAccessCard(
-                      context,
-                      'Finance',
-                      Icons.account_balance_wallet_rounded,
-                      Colors.blue,
-                      '\$5,420 • Up 12%',
-                      '/finance',
-                      scoreBlock.score.financialGlobalScore,
-                    ),
-                    _buildQuickAccessCard(
-                      context,
-                      'Social',
-                      Icons.people_alt_rounded,
-                      Colors.purple,
-                      '48 friends • 3 new',
-                      '/social',
-                      scoreBlock.score.socialGlobalScore,
-                    ),
-                    Watch((context) {
-                      final projectGoals = growthBlock.goals.value
-                          .where((g) => g.category == 'project')
-                          .toList();
-                      final activeCount = projectGoals
-                          .where((g) => g.status != 'done')
-                          .length;
-                      final doneCount = projectGoals
-                          .where((g) => g.status == 'done')
-                          .length;
-
-                      return _buildQuickAccessCard(
-                        context,
-                        'Projects',
-                        Icons.rocket_launch_rounded,
-                        Colors.orange,
-                        '$activeCount active • $doneCount done',
-                        '/projects',
-                        scoreBlock.score.careerGlobalScore,
-                      );
-                    }),
-                  ],
+          centerTitle: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: CircleAvatar(
+                backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
+                child: Icon(
+                  Icons.person_outline,
+                  color: colorScheme.primary,
+                  size: 20,
                 ),
               ),
+              onPressed: () => context.go('/profile'),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: Watch((context) {
+          final internalWidgets =
+              internalWidgetBlock.listInternalWidgetHomePage.value;
+          final externalWidgets = externalWidgetBlock.listExternalWidgets.value;
 
-              const SizedBox(height: 32),
-
-              // --- SECTION: QUICK ACCESS GRID ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          return SwipeablePage(
+            direction: SwipeablePageDirection.leftToRight,
+            onSwipe: () => context.pop(),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- SECTION: GAMIFIED HEADER ---
+                  _buildGamifiedHeader(context),
+                  const SizedBox(height: 24),
+
+                  // --- SECTION: LIFE DASHBOARD ---
+                  _buildSectionHeader(context, 'Life Dashboard', '/profile'),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 180,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        _buildQuickAccessCard(
+                          context,
+                          'Health',
+                          Icons.favorite_rounded,
+                          Colors.green,
+                          '${healthMetricsData['steps']?.value ?? 0} steps • ${healthMetricsData['food']?.value ?? 0} kcal',
+                          '/health',
+                          scoreBlock.score.healthGlobalScore,
+                        ),
+                        _buildQuickAccessCard(
+                          context,
+                          'Finance',
+                          Icons.account_balance_wallet_rounded,
+                          Colors.blue,
+                          '\$5,420 • Up 12%',
+                          '/finance',
+                          scoreBlock.score.financialGlobalScore,
+                        ),
+                        _buildQuickAccessCard(
+                          context,
+                          'Social',
+                          Icons.people_alt_rounded,
+                          Colors.purple,
+                          '48 friends • 3 new',
+                          '/social',
+                          scoreBlock.score.socialGlobalScore,
+                        ),
+                        Watch((context) {
+                          final projectGoals = growthBlock.goals.value
+                              .where((g) => g.category == 'project')
+                              .toList();
+                          final activeCount = projectGoals
+                              .where((g) => g.status != 'done')
+                              .length;
+                          final doneCount = projectGoals
+                              .where((g) => g.status == 'done')
+                              .length;
+
+                          return _buildQuickAccessCard(
+                            context,
+                            'Projects',
+                            Icons.rocket_launch_rounded,
+                            Colors.orange,
+                            '$activeCount active • $doneCount done',
+                            '/projects',
+                            scoreBlock.score.careerGlobalScore,
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // --- SECTION: QUICK ACCESS GRID ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      AutoSizeText(
+                        'Quick Access',
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                        maxLines: 1,
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _isEditMode = !_isEditMode;
+                          });
+                        },
+                        child: Text(_isEditMode ? 'Done' : 'Edit'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  SizedBox(
+                    height: sizeOfWidget,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.only(right: 20),
+                      itemCount:
+                          internalWidgets.length + externalWidgets.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: SizedBox(
+                              width: 110,
+                              child: _buildAddButton(context),
+                            ),
+                          );
+                        } else if (index <= internalWidgets.length) {
+                          final widget = internalWidgets[index - 1];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: SizedBox(
+                              width: 110,
+                              child: _buildGridItem(context, widget),
+                            ),
+                          );
+                        } else {
+                          final ext =
+                              externalWidgets[index -
+                                  internalWidgets.length -
+                                  1];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: SizedBox(
+                              width: 110,
+                              child: _buildExternalGridItem(context, ext),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // --- SECTION: RECENT ACTIVITY ---
                   AutoSizeText(
-                    'Quick Access',
+                    'Recent Insights',
                     style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
                     ),
                     maxLines: 1,
                   ),
-                  TextButton(onPressed: () {}, child: const Text('Edit')),
-                ],
-              ),
-              const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-              SizedBox(
-                height: 130,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(right: 20),
-                  itemCount:
-                      internalWidgets.length + externalWidgets.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index < internalWidgets.length) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: SizedBox(
-                          width: 110,
-                          child: _buildGridItem(
-                            context,
-                            internalWidgets[index],
-                          ),
-                        ),
-                      );
-                    } else if (index <
-                        internalWidgets.length + externalWidgets.length) {
-                      final ext =
-                          externalWidgets[index - internalWidgets.length];
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: SizedBox(
-                          width: 110,
-                          child: _buildExternalGridItem(context, ext),
-                        ),
-                      );
-                    } else {
-                      return SizedBox(
-                        width: 110,
-                        child: _buildGridItem(context, null, isAddButton: true),
-                      );
-                    }
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // --- SECTION: RECENT ACTIVITY ---
-              AutoSizeText(
-                'Recent Insights',
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-                maxLines: 1,
-              ),
-              const SizedBox(height: 16),
-
-              // Placeholder for insights
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: colorScheme.primary.withOpacity(0.1),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.lightbulb_outline_rounded,
-                      color: colorScheme.primary,
-                      size: 32,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Smart Tip',
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'You\'ve been 20% more active this week. Keep it up!',
-                            style: textTheme.bodySmall,
-                          ),
-                        ],
+                  // Placeholder for insights
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(0.1),
                       ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline_rounded,
+                          color: colorScheme.primary,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Smart Tip',
+                                style: textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'You\'ve been 20% more active this week. Keep it up!',
+                                style: textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-              const SizedBox(height: 40),
-            ],
-          ),
-        );
-      }),
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -529,7 +655,7 @@ class _HomePageState extends State<HomePage> {
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => context.go(route),
+          onTap: () => context.push(route),
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -625,16 +751,16 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildGridItem(
     BuildContext context,
-    InternalWidgetProtocol? widgetData, {
-    bool isAddButton = false,
-  }) {
+    InternalWidgetProtocol? widgetData,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (isAddButton) {
+    if (widgetData == null) {
       return InkWell(
         onTap: () => _showAddPluginDialog(context),
         borderRadius: BorderRadius.circular(28),
         child: Container(
+          width: 120,
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: BorderRadius.circular(28),
@@ -661,119 +787,191 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
-                'Add Plugin',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                  color: colorScheme.primary,
-                ),
-              ),
             ],
           ),
         ),
       );
     }
 
-    if (widgetData == null) return const SizedBox.shrink();
-
-    return InkWell(
-      onTap: () => _navigateInternalUrl(widgetData.url),
-      borderRadius: BorderRadius.circular(28),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.4),
+    final item = Container(
+      width: 120,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                widgetData.icon,
-                color: colorScheme.primary,
-                size: 28,
-              ),
-            ),
-            const SizedBox(height: 10),
-            AutoSizeText(
-              widgetData.name,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-            ),
-          ],
-        ),
+        ],
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4)),
       ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(widgetData.icon, color: colorScheme.primary, size: 28),
+          ),
+          const SizedBox(height: 10),
+          AutoSizeText(
+            widgetData.name,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+          ),
+        ],
+      ),
+    );
+
+    return Stack(
+      children: [
+        InkWell(
+          onTap: _isEditMode
+              ? () {
+                  _showRenameInternalDialog(context, widgetData);
+                }
+              : () => _navigateInternalUrl(widgetData.url),
+          borderRadius: BorderRadius.circular(20),
+          child: item,
+        ),
+        if (_isEditMode) ...[
+          Positioned(
+            top: 5,
+            right: 5,
+            child: InkWell(
+              onTap: () {
+                // Logic to delete internal widget
+                internalWidgetBlock.deleteWidget(
+                  database.internalWidgetsDAO,
+                  widgetData.name,
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 5,
+            left: 15,
+            child: Text(
+              "Tap to rename",
+              style: TextStyle(
+                color: colorScheme.primary,
+                fontSize: 6,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
   Widget _buildExternalGridItem(BuildContext context, ExternalWidgetData data) {
     final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: () {
-        final String fullUrl = "${data.protocol}://${data.host}${data.url}";
-        print("Opening external widget: $fullUrl");
-        // navigateExternalUrl(fullUrl);
-        WidgetNavigatorAction.navigateExternalUrl(context, fullUrl);
-        // navigateExternalUrl(context, fullUrl);
-      },
-      borderRadius: BorderRadius.circular(28),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.4),
+    final String fullUrl = "${data.protocol}://${data.host}${data.url}";
+
+    final item = Container(
+      width: sizeOfWidget,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.secondaryContainer.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.language_rounded,
-                color: Colors.blueAccent,
-                size: 28,
-              ),
-            ),
-            const SizedBox(height: 10),
-            AutoSizeText(
-              data.name,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-            ),
-          ],
-        ),
+        ],
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4)),
       ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.secondaryContainer.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.language_rounded,
+              color: Colors.blueAccent,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 10),
+          AutoSizeText(
+            data.name,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+          ),
+        ],
+      ),
+    );
+
+    return Stack(
+      children: [
+        InkWell(
+          onTap: _isEditMode
+              ? () {
+                  _showRenameExternalDialog(context, data);
+                }
+              : () {
+                  WidgetNavigatorAction.navigateExternalUrl(context, fullUrl);
+                },
+          borderRadius: BorderRadius.circular(28),
+          child: item,
+        ),
+        if (_isEditMode) ...[
+          Positioned(
+            top: 5,
+            right: 5,
+            child: InkWell(
+              onTap: () {
+                // Logic to delete external widget
+                externalWidgetBlock.deleteWidget(
+                  database.externalWidgetsDAO,
+                  data.widgetID,
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 5,
+            left: 15,
+            child: Text(
+              "Tap to change name",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 6,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -781,5 +979,110 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => WebViewPage(url: fullUrl)));
+  }
+
+  void _showRenameInternalDialog(
+    BuildContext context,
+    InternalWidgetProtocol widgetData,
+  ) {
+    final controller = TextEditingController(text: widgetData.name);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename Internal Widget'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Widget Name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                internalWidgetBlock.renameWidget(
+                  database.internalWidgetsDAO,
+                  widgetData.name,
+                  controller.text,
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRenameExternalDialog(
+    BuildContext context,
+    ExternalWidgetData data,
+  ) {
+    final controller = TextEditingController(text: data.name);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename External Widget'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Widget Name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                externalWidgetBlock.renameWidget(
+                  database.externalWidgetsDAO,
+                  data.widgetID,
+                  controller.text,
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddButton(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () => _showAddPluginDialog(context),
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_rounded, color: colorScheme.primary, size: 32),
+              const SizedBox(height: 4),
+              Text(
+                'Add',
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

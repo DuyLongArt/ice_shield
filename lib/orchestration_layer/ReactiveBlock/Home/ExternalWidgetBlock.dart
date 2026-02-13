@@ -16,4 +16,16 @@ class ExternalWidgetBlock {
   void dispose() {
     _subscription?.cancel();
   }
+
+  Future<void> deleteWidget(ExternalWidgetsDAO dao, int widgetID) async {
+    await dao.deleteWidget(widgetID);
+  }
+
+  Future<void> renameWidget(
+    ExternalWidgetsDAO dao,
+    int widgetID,
+    String newName,
+  ) async {
+    await dao.renameExternalWidget(widgetID, newName);
+  }
 }

@@ -89,10 +89,31 @@ class WidgetManagerBlock {
     }
   }
 
+  bool _isSaving = false;
+  bool _needsSaveAgain = false;
+
   Future<void> _persistToDatabase() async {
     final personId = _personIdSignal.value;
     if (_widgetDao == null || personId == null) return;
-    await _widgetDao.saveAllWidgets(personId, widgets.value);
+
+    if (_isSaving) {
+      _needsSaveAgain = true;
+      return;
+    }
+
+    _isSaving = true;
+    _needsSaveAgain = false;
+
+    try {
+      await _widgetDao.saveAllWidgets(personId, widgets.value);
+    } catch (e) {
+      print("Error persisting widgets: $e");
+    } finally {
+      _isSaving = false;
+      if (_needsSaveAgain) {
+        _persistToDatabase();
+      }
+    }
   }
 
   // ==================================================
@@ -119,7 +140,8 @@ class WidgetManagerBlock {
     widgets[indexB] = widgetA;
 
     _updateDependencies(widgetA);
-    _persistToDatabase();
+    // Don't call persist here if it's called by the parent interaction handler
+    // _persistToDatabase();
   }
 
   void mergeWidgets(int sourceIndex, int targetIndex) {
@@ -147,6 +169,15 @@ class WidgetManagerBlock {
 
   void removeByIndex(int index) {
     widgets[index] = InternalWidgetDragProtocol.empty();
+    _persistToDatabase();
+  }
+
+  void renameWidget(int index, String newName) {
+    if (!_isValidIndex(index)) return;
+    final widget = widgets[index];
+    if (widget.isEmpty) return;
+
+    widgets[index] = widget.copyWith(name: newName);
     _persistToDatabase();
   }
 

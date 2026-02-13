@@ -1,6 +1,7 @@
 class GoalProtocol {
   final int goalID;
   final int personID;
+  final int? projectID;
   final String title;
   final String? description;
   final String category;
@@ -13,6 +14,7 @@ class GoalProtocol {
   GoalProtocol({
     required this.goalID,
     required this.personID,
+    this.projectID,
     required this.title,
     this.description,
     this.category = 'personal',

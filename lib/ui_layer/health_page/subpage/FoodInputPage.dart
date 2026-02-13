@@ -358,7 +358,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                       subtitle: Row(
                         children: [
                           AutoSizeText(
-                            meal.meal.eatenAt.toString(),
+                            meal.meal.eatenAt.toString().substring(0,16),
                             maxLines: 1,
                           ),
                           const SizedBox(width: 8),

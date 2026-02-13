@@ -25,83 +25,169 @@ class ThemeManager {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        final width = MediaQuery.of(context).size.width;
-        return Align(
-          alignment: Alignment.center, // Keeps it strictly centered
-          // child: Material( // Required for elevation/styling when not using AlertDialog
-          //   color: Colors.transparent,
-          child: Container(
-            width: width * 0.5,
+        final colorScheme = Theme.of(context).colorScheme;
+        final size = MediaQuery.of(context).size;
 
+        return Center(
+          child: Container(
+            width: size.width * 0.8, // Slightly wider for better text fit
+            height: size.height * 0.7, // Prevent screen overflow
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(24), // Softer, modern corners
               border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
+                color: colorScheme.outlineVariant.withOpacity(0.5),
                 width: 1,
               ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // const SizedBox(height: 16),
-                _buildThemeOption(
-                  context,
-                  'Emerald Haven',
-                  'assets/DefaultTheme.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Cyberpunk 2077',
-                  'assets/Cyberpunk.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Midnight Gold',
-                  'assets/MidnightGold.json',
-                ),
-                _buildThemeOption(context, 'Deep Sea', 'assets/DeepSea.json'),
-                _buildThemeOption(
-                  context,
-                  'Frosty Morning',
-                  'assets/Frosty.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Light Purple',
-                  'assets/LightThemePurple.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Purple Seed',
-                  'assets/PurpleSeed.json',
-                ),
-                const Divider(),
-                _buildThemeOption(context, 'Seed Blue', 'assets/SeedBlue.json'),
-                _buildThemeOption(
-                  context,
-                  'Seed Green',
-                  'assets/SeedGreen.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Seed Orange',
-                  'assets/SeedOrange.json',
-                ),
-                _buildThemeOption(
-                  context,
-                  'Seed Pink (Dark)',
-                  'assets/SeedPink.json',
-                ),
-                _buildThemeOption(context, 'Seed Red', 'assets/SeedRed.json'),
-                _buildThemeOption(context, 'Seed Teal', 'assets/SeedTeal.json'),
-                _buildThemeOption(
-                  context,
-                  'Seed Indigo',
-                  'assets/SeedIndigo.json',
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
-              // ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header section
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      "Appearance",
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+
+                  // Scrollable List
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          _buildThemeOption(
+                            context,
+                            'Emerald Haven',
+                            'assets/DefaultTheme.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Cyberpunk 2077',
+                            'assets/Cyberpunk.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Midnight Gold',
+                            'assets/MidnightGold.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Deep Sea',
+                            'assets/DeepSea.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Frosty Morning',
+                            'assets/Frosty.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Light Purple',
+                            'assets/LightThemePurple.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Purple Seed',
+                            'assets/PurpleSeed.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Midnight Nebula',
+                            'assets/MidnightNebula.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Sunset Horizon',
+                            'assets/SunsetHorizon.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Forest Whisper',
+                            'assets/ForestWhisper.json',
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                const Expanded(child: Divider()),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                  child: Text(
+                                    "Core Colors",
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ),
+                                const Expanded(child: Divider()),
+                              ],
+                            ),
+                          ),
+
+                          _buildThemeOption(
+                            context,
+                            'Seed Blue',
+                            'assets/SeedBlue.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Seed Green',
+                            'assets/SeedGreen.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Seed Orange',
+                            'assets/SeedOrange.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Seed Pink (Dark)',
+                            'assets/SeedPink.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Seed Red',
+                            'assets/SeedRed.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Seed Teal',
+                            'assets/SeedTeal.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Seed Indigo',
+                            'assets/SeedIndigo.json',
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

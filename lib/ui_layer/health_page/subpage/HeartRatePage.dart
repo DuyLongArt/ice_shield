@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class HeartRatePage extends StatefulWidget {
@@ -67,306 +68,299 @@ class _HeartRatePageState extends State<HeartRatePage> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: Text(
-          'Heart Rate Monitor',
-          style: textTheme.titleLarge?.copyWith(
-            color: colorScheme.onPrimary,
-            fontWeight: FontWeight.bold,
+      body: Stack(
+        children: [
+          // Background Glow
+          Positioned(
+            top: -50,
+            left: -50,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: zoneColor.withValues(alpha: 0.15),
+              ),
+            ),
           ),
-        ),
-        centerTitle: true,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Current Heart Rate Card
-            Card(
-              elevation: 8.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.0),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    Icon(Icons.favorite, color: zoneColor, size: 64),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Current Heart Rate',
-                      style: textTheme.titleMedium?.copyWith(
-                        color: colorScheme.secondary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          currentHeartRate.toString(),
-                          style: textTheme.displayLarge?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      Text(
+                        'Heart Rate',
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'bpm',
-                          style: textTheme.titleLarge?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
                       ),
+                      const SizedBox(width: 40),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Main Heart Rate Display
+                  Center(
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: zoneColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: zoneColor, width: 2),
-                      ),
-                      child: Text(
-                        heartRateZone,
-                        style: textTheme.titleMedium?.copyWith(
-                          color: zoneColor,
-                          fontWeight: FontWeight.bold,
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: [
+                          BoxShadow(
+                            color: zoneColor.withValues(alpha: 0.2),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: zoneColor.withValues(alpha: 0.3),
+                          width: 2,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Statistics
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Average',
-                    averageHeartRate.toString(),
-                    'bpm',
-                    Icons.analytics,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Maximum',
-                    maxHeartRate.toString(),
-                    'bpm',
-                    Icons.arrow_upward,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Minimum',
-                    minHeartRate.toString(),
-                    'bpm',
-                    Icons.arrow_downward,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Readings',
-                    recentReadings.length.toString(),
-                    'total',
-                    Icons.history,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Add Reading Section
-            Card(
-              elevation: 4.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Add Heart Rate Reading',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _bpmController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: 'BPM (40-220)',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                      child: Column(
+                        children: [
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 1.0, end: 1.2),
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.elasticOut,
+                            builder: (context, value, child) {
+                              return Transform.scale(
+                                scale: value,
+                                child: Icon(
+                                  Icons.favorite_rounded,
+                                  color: zoneColor,
+                                  size: 60,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                currentHeartRate.toString(),
+                                style: textTheme.displayLarge?.copyWith(
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 72,
+                                ),
                               ),
-                              prefixIcon: const Icon(Icons.favorite),
+                              const SizedBox(width: 10),
+                              Text(
+                                'bpm',
+                                style: textTheme.titleLarge?.copyWith(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: zoneColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              heartRateZone.toUpperCase(),
+                              style: textTheme.titleSmall?.copyWith(
+                                color: zoneColor,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: _addReading,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: colorScheme.onPrimary,
-                            padding: const EdgeInsets.all(16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Icon(Icons.add),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Heart Rate Zones Info
-            Card(
-              elevation: 4.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Heart Rate Zones',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    _buildZoneInfo(context, 'Resting', '< 60 bpm', Colors.blue),
-                    _buildZoneInfo(
-                      context,
-                      'Normal',
-                      '60-100 bpm',
-                      Colors.green,
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Statistics Grid
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cardWidth = (constraints.maxWidth - 15) / 2;
+                      return Wrap(
+                        spacing: 15,
+                        runSpacing: 15,
+                        children: [
+                          _modernStatCard(
+                            context,
+                            'Average',
+                            averageHeartRate.toString(),
+                            'bpm',
+                            Icons.analytics_rounded,
+                            cardWidth,
+                          ),
+                          _modernStatCard(
+                            context,
+                            'Peak',
+                            maxHeartRate.toString(),
+                            'bpm',
+                            Icons.trending_up_rounded,
+                            cardWidth,
+                          ),
+                          _modernStatCard(
+                            context,
+                            'Resting',
+                            minHeartRate.toString(),
+                            'bpm',
+                            Icons.trending_down_rounded,
+                            cardWidth,
+                          ),
+                          _modernStatCard(
+                            context,
+                            'Samples',
+                            recentReadings.length.toString(),
+                            'total',
+                            Icons.history_toggle_off_rounded,
+                            cardWidth,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Manual Entry Section
+                  Text(
+                    'Manual Entry',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    _buildZoneInfo(
-                      context,
-                      'Elevated',
-                      '100-140 bpm',
-                      Colors.orange,
+                  ),
+                  const SizedBox(height: 15),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainer.withValues(
+                            alpha: 0.5,
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: colorScheme.outlineVariant.withValues(
+                              alpha: 0.2,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _bpmController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: 'Enter BPM',
+                                  filled: true,
+                                  fillColor: colorScheme.surface,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            ElevatedButton(
+                              onPressed: _addReading,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                                padding: const EdgeInsets.all(16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Icon(Icons.add_rounded),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    _buildZoneInfo(context, 'High', '> 140 bpm', Colors.red),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatCard(
+  Widget _modernStatCard(
     BuildContext context,
     String label,
     String value,
     String unit,
     IconData icon,
+    double width,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 4.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, color: colorScheme.secondary, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: textTheme.titleLarge?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              unit,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ],
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
         ),
       ),
-    );
-  }
-
-  Widget _buildZoneInfo(
-    BuildContext context,
-    String zone,
-    String range,
-    Color color,
-  ) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              zone,
-              style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+          Icon(icon, color: colorScheme.primary, size: 24),
+          const SizedBox(height: 15),
+          Text(
+            value,
+            style: textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w900,
             ),
           ),
           Text(
-            range,
-            style: textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            '$label ($unit)',
+            style: textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

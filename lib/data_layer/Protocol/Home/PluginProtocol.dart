@@ -9,6 +9,8 @@ enum PluginCategory {
   tracking,
   entertainment,
   finance,
+  fitness,
+  social,
   other,
 }
 

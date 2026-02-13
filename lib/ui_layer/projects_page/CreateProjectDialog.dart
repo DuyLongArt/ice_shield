@@ -4,6 +4,9 @@ import 'package:ice_shield/orchestration_layer/IDGen.dart';
 import 'package:ice_shield/data_layer/Protocol/Canvas/ExternalWidgetProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/Home/InternalWidgetProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/Home/PluginProtocol.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
+import 'dart:convert';
 import 'package:provider/provider.dart';
 
 class CreateProjectDialog extends StatefulWidget {
@@ -18,12 +21,16 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _urlController = TextEditingController(); // For the internal widget URL
+  final _taskTitleController = TextEditingController();
+  final _noteTitleController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
     _urlController.dispose();
+    _taskTitleController.dispose();
+    _noteTitleController.dispose();
     super.dispose();
   }
 
@@ -31,12 +38,21 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
     if (_formKey.currentState!.validate()) {
       final internalWidgetsDAO = context.read<InternalWidgetsDAO>();
       final externalWidgetsDAO = context.read<ExternalWidgetsDAO>();
+      final projectBlock = context.read<ProjectBlock>();
+      final growthBlock = context.read<GrowthBlock>();
+      final projectNoteDAO = context.read<ProjectNoteDAO>();
 
       final name = _nameController.text.trim();
       final description = _descriptionController.text.trim();
       final url = _urlController.text.trim(); // e.g., /project/123
+      final taskTitle = _taskTitleController.text.trim();
+      final noteTitle = _noteTitleController.text.trim();
+
       final widgetID = IDGen.generate();
       final dateAdded = DateTime.now().toIso8601String();
+
+      // 0. Create Project Entity
+      await projectBlock.createProject(name, description, null);
 
       // 1. Create InternalWidgetProtocol
       final internalWidget = InternalWidgetProtocol(
@@ -76,11 +92,24 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
         externalWidgetProtocol: externalWidget,
       );
 
+      // 3. Create Task if provided
+      if (taskTitle.isNotEmpty) {
+        await growthBlock.createNewTask(taskTitle, "Initial task for $name");
+      }
+
+      // 4. Create Note if provided
+      if (noteTitle.isNotEmpty) {
+        await projectNoteDAO.insertNote(
+          title: noteTitle,
+          content: jsonEncode({'content': 'Initial note for $name'}),
+        );
+      }
+
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Project Widget Created')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Project created with all components!')),
+        );
       }
     }
   }
@@ -130,6 +159,35 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
                   labelText: 'Internal Path (Optional)',
                   hintText: '/project/custom-path',
                   border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              Text(
+                'Add Initial Components',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _taskTitleController,
+                decoration: const InputDecoration(
+                  labelText: 'Initial Task (Optional)',
+                  hintText: 'e.g., Setup repository',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.add_task),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _noteTitleController,
+                decoration: const InputDecoration(
+                  labelText: 'Initial Note (Optional)',
+                  hintText: 'e.g., Project goals',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.note_add),
                 ),
               ),
               const SizedBox(height: 24),

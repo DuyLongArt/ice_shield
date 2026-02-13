@@ -109,6 +109,17 @@ class InternalWidgetsDAO extends DatabaseAccessor<AppDatabase>
 
     return into(internalWidgetsTable).insert(entry);
   }
+
+  Future<int> deleteInternalWidget(String name) {
+    return (delete(
+      internalWidgetsTable,
+    )..where((t) => t.name.equals(name))).go();
+  }
+
+  Future<int> renameInternalWidget(String oldName, String newName) {
+    return (update(internalWidgetsTable)..where((t) => t.name.equals(oldName)))
+        .write(InternalWidgetsTableCompanion(name: Value(newName)));
+  }
 }
 
 @DataClassName('ExternalWidgetData') // The generated data class name
@@ -141,8 +152,35 @@ class ThemesTable extends Table {
 @DataClassName('ProjectNoteData')
 class ProjectNotesTable extends Table {
   IntColumn get noteID => integer().autoIncrement()();
+  IntColumn get personID => integer().nullable().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
   TextColumn get title => text().withLength(min: 1, max: 200)();
   TextColumn get content => text()(); // JSON string of the note content
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get projectID => integer().nullable().references(
+    ProjectsTable,
+    #projectID,
+    onDelete: KeyAction.cascade,
+  )();
+}
+
+@DataClassName('ProjectData')
+class ProjectsTable extends Table {
+  IntColumn get projectID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get name => text().withLength(min: 1, max: 200)();
+  TextColumn get description => text().nullable()();
+  TextColumn get color => text().nullable()();
+  IntColumn get status =>
+      integer().withDefault(const Constant(0))(); // 0: active, 1: done
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -320,6 +358,24 @@ class AssetsTable extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+@DataClassName('TransactionData')
+class TransactionsTable extends Table {
+  IntColumn get transactionID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get category =>
+      text()(); // e.g. 'food', 'transport', 'salary', 'savings'
+  TextColumn get type => text()(); // 'income', 'expense', 'savings'
+  RealColumn get amount => real()();
+  TextColumn get description => text().nullable()();
+  DateTimeColumn get transactionDate =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DataClassName('GoalData')
 class GoalsTable extends Table {
   IntColumn get goalID => integer().autoIncrement()();
@@ -340,6 +396,11 @@ class GoalsTable extends Table {
       integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get projectID => integer().nullable().references(
+    ProjectsTable,
+    #projectID,
+    onDelete: KeyAction.cascade,
+  )();
 }
 
 @DataClassName("ScoreLocalData")
@@ -628,6 +689,12 @@ class ExternalWidgetsDAO extends DatabaseAccessor<AppDatabase>
     )..where((tbl) => tbl.widgetID.equals(widgetID))).go();
   }
 
+  Future<int> renameExternalWidget(int widgetID, String newName) {
+    return (update(externalWidgetsTable)
+          ..where((tbl) => tbl.widgetID.equals(widgetID)))
+        .write(ExternalWidgetsTableCompanion(name: Value(newName)));
+  }
+
   Stream<List<ExternalWidgetData>> watchAllWidgets() {
     return select(externalWidgetsTable).watch();
   }
@@ -680,11 +747,16 @@ class ProjectNoteDAO extends DatabaseAccessor<AppDatabase>
     with _$ProjectNoteDAOMixin {
   ProjectNoteDAO(super.db);
 
-  Future<int> insertNote({required String title, required String content}) {
+  Future<int> insertNote({
+    required String title,
+    required String content,
+    int? projectID,
+  }) {
     return into(projectNotesTable).insert(
       ProjectNotesTableCompanion.insert(
         title: title,
         content: content,
+        projectID: Value(projectID),
         createdAt: Value(DateTime.now()),
         updatedAt: Value(DateTime.now()),
       ),
@@ -719,11 +791,42 @@ class ProjectNoteDAO extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  Stream<List<ProjectNoteData>> watchNotesByProject(int projectID) {
+    return (select(projectNotesTable)
+          ..where((tbl) => tbl.projectID.equals(projectID))
+          ..orderBy([
+            (tbl) => OrderingTerm(
+              expression: tbl.updatedAt,
+              mode: OrderingMode.desc,
+            ),
+          ]))
+        .watch();
+  }
+
   Future<ProjectNoteData?> getNoteById(int id) {
     return (select(
       projectNotesTable,
     )..where((tbl) => tbl.noteID.equals(id))).getSingleOrNull();
   }
+}
+
+@DriftAccessor(tables: [ProjectsTable])
+class ProjectsDAO extends DatabaseAccessor<AppDatabase>
+    with _$ProjectsDAOMixin {
+  ProjectsDAO(super.db);
+
+  Future<int> insertProject(ProjectsTableCompanion project) =>
+      into(projectsTable).insert(project);
+
+  Stream<List<ProjectData>> watchAllProjects(int personID) => (select(
+    projectsTable,
+  )..where((t) => t.personID.equals(personID))).watch();
+
+  Future<bool> updateProject(ProjectData project) =>
+      update(projectsTable).replace(project);
+
+  Future<int> deleteProject(int projectID) =>
+      (delete(projectsTable)..where((t) => t.projectID.equals(projectID))).go();
 }
 
 // 4.4 PersonManagementDAO
@@ -1010,7 +1113,7 @@ class PersonManagementDAO extends DatabaseAccessor<AppDatabase>
 }
 
 // 4.5 FinanceDAO
-@DriftAccessor(tables: [FinancialAccountsTable, AssetsTable])
+@DriftAccessor(tables: [FinancialAccountsTable, AssetsTable, TransactionsTable])
 class FinanceDAO extends DatabaseAccessor<AppDatabase> with _$FinanceDAOMixin {
   FinanceDAO(super.db);
 
@@ -1026,6 +1129,47 @@ class FinanceDAO extends DatabaseAccessor<AppDatabase> with _$FinanceDAOMixin {
       into(assetsTable).insert(asset);
   Stream<List<AssetData>> watchAssets(int personId) =>
       (select(assetsTable)..where((t) => t.personID.equals(personId))).watch();
+
+  // Transactions
+  Future<int> insertTransaction(TransactionsTableCompanion txn) =>
+      into(transactionsTable).insert(txn);
+
+  Future<void> deleteTransaction(int transactionID) => (delete(
+    transactionsTable,
+  )..where((t) => t.transactionID.equals(transactionID))).go();
+
+  Stream<List<TransactionData>> watchAllTransactions(int personId) =>
+      (select(transactionsTable)
+            ..where((t) => t.personID.equals(personId))
+            ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
+          .watch();
+
+  Stream<List<TransactionData>> watchTransactionsByType(
+    int personId,
+    String type,
+  ) =>
+      (select(transactionsTable)
+            ..where((t) => t.personID.equals(personId) & t.type.equals(type))
+            ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
+          .watch();
+
+  Stream<List<TransactionData>> watchMonthlyTransactions(
+    int personId,
+    int year,
+    int month,
+  ) {
+    final start = DateTime(year, month, 1);
+    final end = DateTime(year, month + 1, 0, 23, 59, 59);
+    return (select(transactionsTable)
+          ..where(
+            (t) =>
+                t.personID.equals(personId) &
+                t.transactionDate.isBiggerOrEqualValue(start) &
+                t.transactionDate.isSmallerOrEqualValue(end),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
+        .watch();
+  }
 }
 
 // 4.6 GrowthDAO
@@ -1038,6 +1182,9 @@ class GrowthDAO extends DatabaseAccessor<AppDatabase> with _$GrowthDAOMixin {
       into(goalsTable).insert(goal);
   Stream<List<GoalData>> watchGoals(int personId) =>
       (select(goalsTable)..where((t) => t.personID.equals(personId))).watch();
+
+  Stream<List<GoalData>> watchGoalsByProject(int projectID) =>
+      (select(goalsTable)..where((t) => t.projectID.equals(projectID))).watch();
 
   Future<void> updateGoalStatus(int goalID, String status) async {
     await (update(goalsTable)..where((t) => t.goalID.equals(goalID))).write(
@@ -1321,12 +1468,15 @@ LazyDatabase _openConnection() {
     DaysTable,
     ScoresTable,
     ThemeTable,
+    ProjectsTable,
+    TransactionsTable,
   ],
   daos: [
     ThemesTableDAO,
     ExternalWidgetsDAO,
     InternalWidgetsDAO,
     ProjectNoteDAO,
+    ProjectsDAO,
     // New DAOs
     PersonManagementDAO,
     FinanceDAO,
@@ -1345,7 +1495,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 7; // Increment schema version
+  int get schemaVersion => 9; // Increment schema version
 
   // Migration strategy would be needed here for a real app update
   @override
@@ -1381,6 +1531,30 @@ class AppDatabase extends _$AppDatabase {
         if (from < 6) {
           await m.createTable(mealsTable);
           await m.createTable(daysTable);
+        }
+        if (from < 7) {
+          await m.createTable(projectsTable);
+        }
+        if (from < 8) {
+          // Safely add columns - catch errors if they already exist
+          try {
+            await customStatement(
+              'ALTER TABLE project_notes_table ADD COLUMN person_i_d INTEGER REFERENCES persons_table(person_i_d) ON DELETE CASCADE',
+            );
+          } catch (_) {}
+          try {
+            await customStatement(
+              'ALTER TABLE project_notes_table ADD COLUMN project_i_d INTEGER REFERENCES projects_table(project_i_d) ON DELETE CASCADE',
+            );
+          } catch (_) {}
+          try {
+            await customStatement(
+              'ALTER TABLE goals_table ADD COLUMN project_i_d INTEGER REFERENCES projects_table(project_i_d) ON DELETE CASCADE',
+            );
+          } catch (_) {}
+        }
+        if (from < 9) {
+          await m.createTable(transactionsTable);
         }
       },
     );

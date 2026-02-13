@@ -1,5 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:pedometer/pedometer.dart';
+import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
 
 class StepsPage extends StatefulWidget {
   const StepsPage({super.key});
@@ -17,11 +19,9 @@ class _StepsPageState extends State<StepsPage> {
   late Stream<PedestrianStatus> _pedestrianStatusStream;
 
   void initPlatformState() {
-    // Listen to step counts
     _stepCountStream = Pedometer.stepCountStream;
     _stepCountStream.listen(onStepCount).onError(onStepCountError);
 
-    // Listen to status (walking, stopped, etc.)
     _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
     _pedestrianStatusStream
         .listen(onPedestrianStatusUpdate)
@@ -34,60 +34,45 @@ class _StepsPageState extends State<StepsPage> {
     super.dispose();
   }
 
-  // 1. Handles the actual step count data
   void onStepCount(StepCount event) {
-    print(event);
     setState(() {
       currentSteps = event.steps;
     });
   }
 
-  // 2. Handles the status (walking, stopped, etc.)
   void onPedestrianStatusUpdate(PedestrianStatus event) {
-    print(event);
     setState(() {
-      // You can create a String variable 'status' to display this in the UI
-      // String status = event.status;
-      print("status step: ${event.status}");
+      debugPrint("status step: ${event.status}");
     });
   }
 
-  // 3. Error handling is required by the Pedometer plugin
   void onPedestrianStatusError(error) {
-    print('Pedestrian Status Error: $error');
+    debugPrint('Pedestrian Status Error: $error');
   }
 
   void onStepCountError(error) {
-    print('Step Count Error: $error');
+    debugPrint('Step Count Error: $error');
   }
 
   double get progressPercentage =>
       (currentSteps / dailyGoal * 100).clamp(0, 100);
   int get remainingSteps => (dailyGoal - currentSteps).clamp(0, dailyGoal);
-  double get distanceKm => currentSteps * 0.0008; // Average: 1 step ≈ 0.8m
-  int get caloriesBurned =>
-      (currentSteps * 0.04).round(); // Average: 1 step ≈ 0.04 cal
-
-  void _addSteps() {
-    final steps = int.tryParse(_stepsController.text);
-    if (steps != null && steps > 0) {
-      setState(() {
-        currentSteps += steps;
-        _stepsController.clear();
-      });
-    }
-  }
-
-  void _resetSteps() {
-    setState(() {
-      currentSteps = 0;
-    });
-  }
+  double get distanceKm => currentSteps * 0.0008;
+  int get caloriesBurned => (currentSteps * 0.04).round();
 
   @override
   void initState() {
     super.initState();
-    initPlatformState(); // 👈 This must be here!
+    initPlatformState();
+
+    // Fetch steps from Apple Health
+    HealthService.fetchStepCount().then((steps) {
+      if (mounted) {
+        setState(() {
+          currentSteps = steps;
+        });
+      }
+    });
   }
 
   @override
@@ -97,180 +82,237 @@ class _StepsPageState extends State<StepsPage> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: Text(
-          'Steps Tracker',
-          style: textTheme.titleLarge?.copyWith(
-            color: colorScheme.onPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Main Steps Display Card
-            Card(
-              elevation: 8.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.0),
+      body: Stack(
+        children: [
+          // Background Decoration
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colorScheme.primary.withValues(alpha: 0.1),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    Text(
-                      'Today\'s Steps',
-                      style: textTheme.titleMedium?.copyWith(
-                        color: colorScheme.secondary,
+            ),
+          ),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      currentSteps.toString(),
-                      style: textTheme.displayLarge?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                      Text(
+                        'Activity Tracker',
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Goal: $dailyGoal steps',
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.6),
+                      const SizedBox(width: 40), // Balance the back button
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Main Steps Display
+                  Center(
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(32),
+                        gradient: LinearGradient(
+                          colors: [colorScheme.primary, colorScheme.secondary],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Progress Bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: currentSteps / dailyGoal,
-                        minHeight: 12,
-                        backgroundColor: colorScheme.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          colorScheme.primary,
+                      child: Container(
+                        padding: const EdgeInsets.all(30),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Steps Taken',
+                              style: textTheme.labelLarge?.copyWith(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              currentSteps.toString(),
+                              style: textTheme.displayLarge?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 64,
+                                letterSpacing: -2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            LinearProgressIndicator(
+                              value: currentSteps / dailyGoal,
+                              backgroundColor:
+                                  colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(10),
+                              minHeight: 10,
+                            ),
+                            const SizedBox(height: 15),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Goal: $dailyGoal',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${progressPercentage.toStringAsFixed(0)}%',
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${progressPercentage.toStringAsFixed(1)}% Complete',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  ),
+
+                  const SizedBox(height: 30),
+                  Text(
+                    'Daily Statistics',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 15),
+
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cardWidth = (constraints.maxWidth - 15) / 2;
+                      return Wrap(
+                        spacing: 15,
+                        runSpacing: 15,
+                        children: [
+                          _buildModernStatCard(
+                            context,
+                            'Remaining',
+                            remainingSteps.toString(),
+                            'steps',
+                            Icons.flag_rounded,
+                            cardWidth,
+                          ),
+                          _buildModernStatCard(
+                            context,
+                            'Distance',
+                            distanceKm.toStringAsFixed(2),
+                            'km',
+                            Icons.route_rounded,
+                            cardWidth,
+                          ),
+                          _buildModernStatCard(
+                            context,
+                            'Calories',
+                            caloriesBurned.toString(),
+                            'kcal',
+                            Icons.local_fire_department_rounded,
+                            cardWidth,
+                          ),
+                          _buildModernStatCard(
+                            context,
+                            'Active Time',
+                            '${(currentSteps / 100).round()}',
+                            'min',
+                            Icons.timer_rounded,
+                            cardWidth,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Statistics Grid
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Remaining',
-                    remainingSteps.toString(),
-                    'steps',
-                    Icons.flag,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Distance',
-                    distanceKm.toStringAsFixed(2),
-                    'km',
-                    Icons.straighten,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Calories',
-                    caloriesBurned.toString(),
-                    'kcal',
-                    Icons.local_fire_department,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    'Active Time',
-                    '${(currentSteps / 100).round()}',
-                    'min',
-                    Icons.timer,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Add Steps Section
-           
-            // Reset Button
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatCard(
+  Widget _buildModernStatCard(
     BuildContext context,
     String label,
     String value,
     String unit,
     IconData icon,
+    double width,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 4.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, color: colorScheme.secondary, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: width,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainer.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: textTheme.titleLarge?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: colorScheme.primary, size: 20),
               ),
-            ),
-            Text(
-              unit,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
+              const SizedBox(height: 15),
+              Text(
+                value,
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                '$label ($unit)',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -7,7 +7,7 @@ class WebViewPage extends StatefulWidget {
   final String url;
   final String title;
 
-  const WebViewPage({super.key, required this.url, this.title = 'Web View'});
+  const WebViewPage({super.key, required this.url, this.title = 'External Widget'});
 
   @override
   State<WebViewPage> createState() => _WebViewPageState();
@@ -33,12 +33,12 @@ class _WebViewPageState extends State<WebViewPage> {
           children: [
             Text(
               _currentTitle,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
             ),
             Text(
               widget.url,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 10,
                 color: colorScheme.onSurface.withOpacity(0.6),
                 fontWeight: FontWeight.normal,
               ),

@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-// import 'package:http/http.dart' as context;
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/DomainData/Plugin/GPSTracker/PersonProfile.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
-import 'package:ice_shield/ui_layer/health_page/subpage/FoodDashboardPage.dart';
-import 'package:ice_shield/ui_layer/health_page/subpage/HeartRatePage.dart';
-import 'package:ice_shield/ui_layer/health_page/subpage/SleepPage.dart';
-import 'package:ice_shield/ui_layer/health_page/subpage/StepsPage.dart';
 import 'package:provider/provider.dart' show ReadContext;
 
 /// Protocol for managing health metrics data

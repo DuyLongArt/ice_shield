@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:ice_shield/ui_layer/finance_page/models/FinanceAsset.dart';
 import 'package:ice_shield/ui_layer/finance_page/services/FinanceService.dart';
+import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FinanceBlock.dart';
+import 'package:go_router/go_router.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:provider/provider.dart';
+import 'package:signals/signals_flutter.dart';
 
 class FinancePage extends StatefulWidget {
   const FinancePage({super.key});
@@ -14,20 +21,163 @@ class FinancePage extends StatefulWidget {
       size: size,
       icon: Icons.add,
       mainFunction: () {
-        print("Finance main button clicked");
+        _showAddTransactionDialog(context);
       },
       subButtons: [
         SubButton(
-          icon: Icons.add_chart_rounded,
-          backgroundColor: Colors.blue,
-          onPressed: () {},
+          icon: Icons.savings_rounded,
+          backgroundColor: Colors.green,
+          label: 'Save',
+          tooltip: 'Add Savings',
+          onPressed: () => _showAddTransactionDialog(context, type: 'savings'),
         ),
         SubButton(
-          icon: Icons.account_balance_wallet_rounded,
-          backgroundColor: Colors.green,
-          onPressed: () {},
+          icon: Icons.shopping_cart_rounded,
+          backgroundColor: Colors.red,
+          label: 'Spend',
+          tooltip: 'Add Expense',
+          onPressed: () => _showAddTransactionDialog(context, type: 'expense'),
+        ),
+        SubButton(
+          icon: Icons.attach_money_rounded,
+          backgroundColor: Colors.blue,
+          label: 'Income',
+          tooltip: 'Add Income',
+          onPressed: () => _showAddTransactionDialog(context, type: 'income'),
         ),
       ],
+    );
+  }
+
+  static void _showAddTransactionDialog(BuildContext context, {String? type}) {
+    final financeBlock = context.read<FinanceBlock>();
+    final amountController = TextEditingController();
+    final descController = TextEditingController();
+    String selectedType = type ?? 'expense';
+    String selectedCategory = 'general';
+
+    final categories = {
+      'expense': [
+        'food',
+        'coffee',
+        'transport',
+        'software',
+        'shopping',
+        'bills',
+        'rent',
+        'subscriptions',
+        'entertainment',
+        'health',
+        'education',
+        'general',
+      ],
+      'income': [
+        'salary',
+        'freelance',
+        'investment',
+        'gift',
+        'bonus',
+        'general',
+      ],
+      'savings': ['emergency', 'goal', 'retirement', 'investment', 'general'],
+    };
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            title: Text(
+              type != null
+                  ? 'Add ${type[0].toUpperCase()}${type.substring(1)}'
+                  : 'Add Transaction',
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (type == null)
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'expense', label: Text('Expense')),
+                        ButtonSegment(value: 'income', label: Text('Income')),
+                        ButtonSegment(value: 'savings', label: Text('Savings')),
+                      ],
+                      selected: {selectedType},
+                      onSelectionChanged: (val) {
+                        setDialogState(() {
+                          selectedType = val.first;
+                          selectedCategory = 'general';
+                        });
+                      },
+                    ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Amount',
+                      prefixText: '\$ ',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: (categories[selectedType] ?? ['general'])
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(c[0].toUpperCase() + c.substring(1)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) => setDialogState(
+                      () => selectedCategory = val ?? 'general',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final amount = double.tryParse(amountController.text);
+                  if (amount == null || amount <= 0) return;
+                  await financeBlock.addTransaction(
+                    category: selectedCategory,
+                    type: selectedType,
+                    amount: amount,
+                    description: descController.text.isEmpty
+                        ? null
+                        : descController.text,
+                  );
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                child: const Text('Add'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -43,11 +193,8 @@ class _FinancePageState extends State<FinancePage> {
   Future<void> _initWatchlist() async {
     const List<String> myTickers = ['FPT', 'VNM', 'HPG', 'SSI'];
 
-    // Fetch data in the background
     for (String ticker in myTickers) {
       final asset = await FinanceService.fetchVnStock(ticker);
-
-      // Check if the widget is still "alive" before calling setState
       if (mounted && asset != null) {
         setState(() {
           _stocks.add(asset);
@@ -58,65 +205,152 @@ class _FinancePageState extends State<FinancePage> {
 
   @override
   void initState() {
-    super.initState(); // Always call super.initState() first!
+    super.initState();
     _initWatchlist();
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final financeBlock = context.read<FinanceBlock>();
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 0,
-            floating: true,
-            pinned: true,
-            elevation: 0,
-            backgroundColor: colorScheme.surface,
-            title: const Text(
-              'Finance',
-              style: TextStyle(fontWeight: FontWeight.w900),
+    return SwipeablePage(
+      onSwipe: () => Navigator.maybePop(context),
+      direction: SwipeablePageDirection.leftToRight,
+      child: Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 0,
+              floating: true,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: colorScheme.surface,
+              title: SwipeablePage(
+                onSwipe: () => context.pop(),
+                child: const AutoSizeText(
+                  'Finance',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                  maxLines: 1,
+                ),
+              ),
+              centerTitle: false,
             ),
-            centerTitle: false,
-          ),
 
-          // Portfolio Summary
-          SliverToBoxAdapter(child: _buildPortfolioHeader(context)),
+            // Portfolio Summary
+            SliverToBoxAdapter(child: _buildPortfolioHeader(context)),
 
-          // Stocks Section
-          _buildSectionHeader(context, 'Stocks', Icons.trending_up_rounded),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildAssetItem(context, _stocks[index]),
-                childCount: _stocks.length,
+            // Savings & Spending Overview
+            SliverToBoxAdapter(
+              child: Watch((context) {
+                return _buildSavingsSpendingCards(context, financeBlock);
+              }),
+            ),
+
+            // Monthly Spending Breakdown
+            SliverToBoxAdapter(
+              child: Watch((context) {
+                return _buildMonthlyBreakdown(context, financeBlock);
+              }),
+            ),
+
+            // Recent Transactions
+            _buildSectionHeader(
+              context,
+              'Recent Transactions',
+              Icons.receipt_long_rounded,
+            ),
+            Watch((context) {
+              final txns = financeBlock.transactions.value;
+              if (txns.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withOpacity(
+                          0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.receipt_long_rounded,
+                            color: colorScheme.onSurface.withOpacity(0.3),
+                            size: 40,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No transactions yet',
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tap + to add your first transaction',
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withOpacity(0.3),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+              final recentTxns = txns.take(10).toList();
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildTransactionItem(
+                      context,
+                      recentTxns[index],
+                      financeBlock,
+                    ),
+                    childCount: recentTxns.length,
+                  ),
+                ),
+              );
+            }),
+
+            // Stocks Section
+            _buildSectionHeader(context, 'Stocks', Icons.trending_up_rounded),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildAssetItem(context, _stocks[index]),
+                  childCount: _stocks.length,
+                ),
               ),
             ),
-          ),
 
-          // Crypto Section
-          _buildSectionHeader(
-            context,
-            'Cryptocurrency',
-            Icons.currency_bitcoin_rounded,
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildAssetItem(context, _coins[index]),
-                childCount: _coins.length,
+            // Crypto Section
+            _buildSectionHeader(
+              context,
+              'Cryptocurrency',
+              Icons.currency_bitcoin_rounded,
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildAssetItem(context, _coins[index]),
+                  childCount: _coins.length,
+                ),
               ),
             ),
-          ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          ],
+        ),
       ),
     );
   }
@@ -194,6 +428,365 @@ class _FinancePageState extends State<FinancePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSavingsSpendingCards(
+    BuildContext context,
+    FinanceBlock financeBlock,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final savings = financeBlock.totalSavings.value;
+    final spending = financeBlock.monthlySpending.value;
+    final income = financeBlock.monthlyIncome.value;
+    final monthName = DateFormat.MMMM().format(DateTime.now());
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildMiniCard(
+                  context,
+                  title: 'Total Savings',
+                  amount: savings,
+                  icon: Icons.savings_rounded,
+                  color: Colors.green,
+                  gradient: [Colors.green.shade600, Colors.green.shade400],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildMiniCard(
+                  context,
+                  title: '$monthName Spending',
+                  amount: spending,
+                  icon: Icons.shopping_cart_rounded,
+                  color: Colors.redAccent,
+                  gradient: [Colors.red.shade600, Colors.red.shade400],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildMiniCard(
+            context,
+            title: '$monthName Income',
+            amount: income,
+            icon: Icons.trending_up_rounded,
+            color: Colors.blue,
+            gradient: [Colors.blue.shade600, Colors.blue.shade400],
+            fullWidth: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniCard(
+    BuildContext context, {
+    required String title,
+    required double amount,
+    required IconData icon,
+    required Color color,
+    required List<Color> gradient,
+    bool fullWidth = false,
+  }) {
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradient,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _currencyFormat.format(amount),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMonthlyBreakdown(
+    BuildContext context,
+    FinanceBlock financeBlock,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final categories = financeBlock.spendingByCategory.value;
+    final totalSpending = financeBlock.monthlySpending.value;
+    final monthName = DateFormat.MMMM().format(DateTime.now());
+
+    if (categories.isEmpty) return const SizedBox.shrink();
+
+    final sortedCategories = categories.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final categoryIcons = {
+      'food': Icons.restaurant_rounded,
+      'coffee': Icons.coffee_rounded,
+      'transport': Icons.directions_car_rounded,
+      'software': Icons.code_rounded,
+      'shopping': Icons.shopping_bag_rounded,
+      'bills': Icons.receipt_rounded,
+      'rent': Icons.home_rounded,
+      'subscriptions': Icons.subscriptions_rounded,
+      'entertainment': Icons.movie_rounded,
+      'health': Icons.medical_services_rounded,
+      'education': Icons.school_rounded,
+      'general': Icons.category_rounded,
+    };
+
+    final categoryColors = {
+      'food': Colors.orange,
+      'coffee': Colors.brown,
+      'transport': Colors.blue,
+      'software': Colors.indigo,
+      'shopping': Colors.pink,
+      'bills': Colors.teal,
+      'rent': Colors.deepOrange,
+      'subscriptions': Colors.deepPurple,
+      'entertainment': Colors.purple,
+      'health': Colors.red,
+      'education': Colors.cyan,
+      'general': Colors.grey,
+    };
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$monthName Breakdown',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...sortedCategories.map((entry) {
+              final percentage = totalSpending > 0
+                  ? entry.value / totalSpending
+                  : 0.0;
+              final catColor = categoryColors[entry.key] ?? colorScheme.primary;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: catColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        categoryIcons[entry.key] ?? Icons.category_rounded,
+                        color: catColor,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                entry.key[0].toUpperCase() +
+                                    entry.key.substring(1),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                _currencyFormat.format(entry.value),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: percentage,
+                              backgroundColor: catColor.withOpacity(0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                catColor,
+                              ),
+                              minHeight: 4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionItem(
+    BuildContext context,
+    TransactionData txn,
+    FinanceBlock financeBlock,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isExpense = txn.type == 'expense';
+    final isSavings = txn.type == 'savings';
+    final color = isExpense
+        ? Colors.red
+        : isSavings
+        ? Colors.green
+        : Colors.blue;
+    final prefix = isExpense ? '-' : '+';
+
+    final typeIcons = {
+      'expense': Icons.arrow_downward_rounded,
+      'income': Icons.arrow_upward_rounded,
+      'savings': Icons.savings_rounded,
+    };
+
+    return Dismissible(
+      key: Key('txn_${txn.transactionID}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.red.shade400,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(Icons.delete_rounded, color: Colors.white),
+      ),
+      onDismissed: (_) => financeBlock.deleteTransaction(txn.transactionID),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.4),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                typeIcons[txn.type] ?? Icons.swap_horiz,
+                color: color,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    txn.description ??
+                        (txn.category[0].toUpperCase() +
+                            txn.category.substring(1)),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${txn.category[0].toUpperCase()}${txn.category.substring(1)} • ${DateFormat.MMMd().format(txn.transactionDate)}',
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.5),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '$prefix${_currencyFormat.format(txn.amount)}',
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

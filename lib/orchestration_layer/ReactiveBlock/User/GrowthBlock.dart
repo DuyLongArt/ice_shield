@@ -3,6 +3,8 @@ import 'package:drift/drift.dart';
 import 'package:signals/signals.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/Protocol/User/GrowthProtocols.dart';
+import 'package:ice_shield/initial_layer/BusinessLogic/ProjectPoint.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
 
 class GrowthBlock {
   final goals = listSignal<GoalProtocol>([]);
@@ -89,15 +91,30 @@ class GrowthBlock {
     });
   }
 
-  Future<void> completeGoal(int goalID) async {
+  Future<void> completeGoal(int goalID, {ScoreBlock? scoreBlock}) async {
     await _dao.updateGoalStatus(goalID, 'done');
+
+    // Award points for task completion
+    if (scoreBlock != null) {
+      final completedCount = goals.value
+          .where((g) => g.status == 'done')
+          .length;
+      final totalCount = goals.value.length;
+      final bonus = ProjectPoint.calculateTaskBonus(completedCount, totalCount);
+      await scoreBlock.persistentCareerIncrement(bonus);
+    }
   }
 
-  Future<void> createNewTask(String title, String description) async {
+  Future<void> createNewTask(
+    String title,
+    String description, {
+    int? projectID,
+  }) async {
     await _dao.createGoal(
       GoalsTableCompanion.insert(
         personID: _personId,
         title: title,
+        projectID: Value(projectID),
         description: Value(description),
         status: const Value('active'),
         category: const Value('project'),

@@ -64,7 +64,7 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/canvas',
           parentNavigatorKey: _shellNavigatorKey,
-          builder: (context, state) => const DragCanvasGrid(),
+          builder: (context, state) => DragCanvasGrid(),
         ),
         // Route 3: Settings placeholder
         GoRoute(
@@ -169,7 +169,7 @@ final GoRouter router = GoRouter(
               parentNavigatorKey: _shellNavigatorKey,
               builder: (context, state) => const WebViewPage(
                 url: 'https://google.com',
-                title: 'Web View',
+                title: 'External Widget',
               ),
             ),
           ],

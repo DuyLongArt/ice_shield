@@ -31,6 +31,7 @@ class SubButton {
 class MainButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final IconData icon;
+  final Widget? iconWidget;
   final Color? backgroundColor;
   final Color? iconColor;
   final double? size;
@@ -38,6 +39,7 @@ class MainButton extends StatefulWidget {
   final String destination;
   final List<SubButton>? subButtons;
   final VoidCallback mainFunction;
+  final VoidCallback? doubleClickFunction;
 
   const MainButton({
     super.key,
@@ -45,11 +47,13 @@ class MainButton extends StatefulWidget {
     required this.destination,
     this.onPressed,
     this.icon = Icons.add,
+    this.iconWidget,
     required this.mainFunction,
     this.subButtons,
     this.backgroundColor,
     this.iconColor,
     this.size,
+    this.doubleClickFunction,
   });
 
   @override
@@ -229,6 +233,7 @@ class _MainButtonState extends State<MainButton>
                       GestureDetector(
                         onTap: _hideOverlay,
                         behavior: HitTestBehavior.opaque,
+                        onDoubleTap: widget.doubleClickFunction,
                         child: Container(
                           width: mainSize,
                           height: mainSize,
@@ -277,6 +282,7 @@ class _MainButtonState extends State<MainButton>
         child: GestureDetector(
           onTap: widget.mainFunction,
           onLongPress: _showOverlay,
+          onDoubleTap: widget.doubleClickFunction,
           behavior: HitTestBehavior.opaque,
           child: Container(
             width: mainSize,
@@ -292,11 +298,19 @@ class _MainButtonState extends State<MainButton>
                 ),
               ],
             ),
-            child: Icon(
-              widget.icon,
-              color: widget.iconColor ?? Colors.white,
-              size: mainSize * 0.5,
-            ),
+            child: widget.iconWidget != null
+                ? ClipOval(
+                    child: SizedBox(
+                      width: mainSize * 0.7,
+                      height: mainSize * 0.7,
+                      child: widget.iconWidget!,
+                    ),
+                  )
+                : Icon(
+                    widget.icon,
+                    color: widget.iconColor ?? Colors.white,
+                    size: mainSize * 0.5,
+                  ),
           ),
         ),
       ),
