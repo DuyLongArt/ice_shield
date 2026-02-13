@@ -1,0 +1,11 @@
+{
+    "theme_name": "Seed Red",
+    "brightness": "light",
+    "useMaterial3": true,
+    "seed_color": "0xFFF44336",
+    "components": {
+        "appBar": {
+            "elevation": 0.0
+        }
+    }
+}

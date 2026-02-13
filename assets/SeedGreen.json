@@ -1,0 +1,11 @@
+{
+    "theme_name": "Seed Green",
+    "brightness": "light",
+    "useMaterial3": true,
+    "seed_color": "0xFF4CAF50",
+    "components": {
+        "appBar": {
+            "elevation": 0.0
+        }
+    }
+}

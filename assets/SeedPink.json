@@ -1,0 +1,11 @@
+{
+    "theme_name": "Seed Pink",
+    "brightness": "dark",
+    "useMaterial3": true,
+    "seed_color": "0xFFE91E63",
+    "components": {
+        "appBar": {
+            "elevation": 0.0
+        }
+    }
+}

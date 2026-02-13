@@ -1,0 +1,11 @@
+{
+    "theme_name": "Seed Teal",
+    "brightness": "light",
+    "useMaterial3": true,
+    "seed_color": "0xFF009688",
+    "components": {
+        "appBar": {
+            "elevation": 0.0
+        }
+    }
+}

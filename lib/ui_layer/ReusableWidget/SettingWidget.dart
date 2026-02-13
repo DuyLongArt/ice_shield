@@ -1,0 +1,181 @@
+import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ice_shield/ui_layer/ReusableWidget/BackWidget.dart';
+import 'package:ice_shield/ui_layer/ReusableWidget/ThemeManager.dart';
+
+class SettingsWidget extends StatelessWidget {
+  final String title;
+
+  const SettingsWidget({super.key, this.title = 'App Settings'});
+
+  static Widget icon(BuildContext context) {
+    return Container(
+      child: IconButton(
+        icon: Icon(Icons.settings),
+        onPressed: () {
+          context.go('/settings');
+        },
+      ),
+      // child: Icon(Icons.settings),
+    );
+  }
+
+  // A helper function to build a standard setting item
+  Widget _buildSettingTile({
+    required BuildContext context,
+    required String settingTitle,
+    String? subtitle,
+    IconData? icon,
+    VoidCallback? onTap,
+    Widget? trailingWidget,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListTile(
+      leading: icon != null ? Icon(icon, color: colorScheme.secondary) : null,
+      title: AutoSizeText(
+        settingTitle,
+        style: Theme.of(context).textTheme.titleMedium,
+        maxLines: 1,
+      ),
+      subtitle: subtitle != null ? AutoSizeText(subtitle, maxLines: 1) : null,
+      trailing: trailingWidget ?? const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: AutoSizeText(title, maxLines: 1),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        actions: [BackWidget()],
+      ),
+      body: ListView(
+        children: <Widget>[
+          // 1. Account Settings
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: AutoSizeText(
+              'ACCOUNT',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              maxLines: 1,
+            ),
+          ),
+          _buildSettingTile(
+            context: context,
+            settingTitle: 'Edit Profile',
+            subtitle: 'Update your name and photo',
+            icon: Icons.person,
+            onTap: () {
+              // Action: Navigate to profile edit page
+              context.go('/personal-info');
+              print('Navigate to Profile Edit');
+            },
+          ),
+          _buildSettingTile(
+            context: context,
+            settingTitle: 'Change Password',
+            icon: Icons.lock,
+            onTap: () {
+              // Action: Navigate to password change page
+              print('Navigate to Change Password');
+            },
+          ),
+
+          Divider(
+            height: 1,
+            indent: 20,
+            endIndent: 20,
+            color: Theme.of(context).dividerColor.withOpacity(0.5),
+          ),
+
+          // 2. Application Preferences
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: AutoSizeText(
+              'PREFERENCES',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              maxLines: 1,
+            ),
+          ),
+
+          // Example: Theme Switch
+          _buildSettingTile(
+            context: context,
+            settingTitle: 'Change Theme',
+            icon: Icons.palette,
+            onTap: () {
+              // Navigator.of(context).pop();
+              ThemeManager.showThemeSelectionDialog(context);
+            },
+          ),
+
+          // Example: Notifications Toggle
+          _buildSettingTile(
+            context: context,
+            settingTitle: 'Notifications',
+            icon: Icons.notifications,
+            trailingWidget: Switch(
+              value: true, // Placeholder for actual notification state
+              onChanged: (bool value) {
+                // Action: Implement notification toggling logic
+                print('Notifications switched to: $value');
+              },
+            ),
+            onTap: null,
+          ),
+
+          Divider(
+            height: 1,
+            indent: 20,
+            endIndent: 20,
+            color: Theme.of(context).dividerColor.withOpacity(0.5),
+          ),
+
+          // 3. Info and Support
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: AutoSizeText(
+              'ABOUT & SUPPORT',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              maxLines: 1,
+            ),
+          ),
+
+          _buildSettingTile(
+            context: context,
+            settingTitle: 'Help & FAQ',
+            icon: Icons.help_outline,
+            onTap: () {
+              // Action: Navigate to web view or support page
+              print('Navigate to Help');
+            },
+          ),
+          _buildSettingTile(
+            context: context,
+            settingTitle: 'Terms of Service',
+            icon: Icons.description,
+            onTap: () {
+              // Action: Open terms page
+              print('Navigate to Terms');
+            },
+          ),
+          _buildSettingTile(
+            context: context,
+            settingTitle: 'Version',
+            subtitle: '1.0.0 (Build 20251109)',
+            icon: Icons.info_outline,
+            trailingWidget:
+                const SizedBox.shrink(), // No arrow for version info
+            onTap: null,
+          ),
+        ],
+      ),
+    );
+  }
+}
