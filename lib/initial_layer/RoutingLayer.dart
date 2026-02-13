@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 // NOTE: Please ensure these imports are correct for your project structure
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart'
     hide ThemeData;
+import 'package:ice_shield/initial_layer/DuyLongServices/CustomAuthService.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidgetBlock.dart';
 import 'package:ice_shield/data_layer/Protocol/Theme/ThemeAdapter.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
-import 'package:ice_shield/initial_layer/Services/CustomAuthService.dart';
 import 'package:provider/provider.dart';
 
 class Adapter extends StatefulWidget {
@@ -88,8 +88,10 @@ class _adapterState extends State<Adapter> {
     return MultiProvider(
       providers: [
         Provider<InternalWidgetBlock>.value(value: internalWidgetBlock),
-        Provider<ExternalWidgetBlock>.value(value: externalWidgetBlock),
-        Provider<ThemeAdapter>(create: (_) => ThemeAdapter()),
+
+      
+
+        // 5. Provide the AuthBlock
         Provider<AuthBlock>.value(value: authBlock),
       ],
       child: widget.childWidget,
